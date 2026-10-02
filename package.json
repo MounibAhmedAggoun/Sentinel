@@ -1,0 +1,10 @@
+{
+  "name": "sentinel",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Web security reconnaissance and monitoring platform (authorized use only).",
+  "license": "MIT",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "workspaces": ["core", "scanner", "cli", "api", "frontend"]
+}
