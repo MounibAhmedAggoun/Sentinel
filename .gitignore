@@ -1,0 +1,18 @@
+node_modules/
+dist/
+coverage/
+*.log
+
+# secrets and local config - never commit
+.env
+.env.*
+!.env.example
+
+# scan output
+reports/
+*.report.json
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
