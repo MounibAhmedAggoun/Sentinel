@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": { "noEmit": true },
+  "include": ["core/src", "scanner/src", "cli/src", "api/src", "vitest.config.ts"]
+}
