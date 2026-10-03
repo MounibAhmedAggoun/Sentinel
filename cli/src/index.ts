@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
 import { resolveTarget } from '@sentinel/core';
+import { resolveDns } from '@sentinel/scanner';
 import { ExitCode } from './exit-codes.js';
 import { logger } from './logger.js';
 import { targetSchema } from './validate.js';
@@ -17,14 +18,14 @@ program
   .description('Scan an authorized target')
   .argument('<target>', 'hostname or IP address you are authorized to scan')
   .option('--allow-private', 'allow private/internal addresses (local testing only)', false)
-  .action(async (target: string, options: { allowPrivate: boolean }) => {
-    const parsed = targetSchema.safeParse(target);
+  .action(async (rawTarget: string, options: { allowPrivate: boolean }) => {
+    const parsed = targetSchema.safeParse(rawTarget);
     if (!parsed.success) {
       logger.error({ reason: parsed.error.issues[0]?.message }, 'invalid target');
       process.exitCode = ExitCode.Usage;
       return;
     }
-    target = parsed.data;
+    const target = parsed.data;
 
     logger.info({ target }, 'scan requested');
 
@@ -34,8 +35,11 @@ program
       process.exitCode = ExitCode.Usage;
       return;
     }
-
     logger.info({ target, ips: result.ips }, 'target validated');
+
+    const dns = await resolveDns(target);
+    console.log(JSON.stringify(dns, null, 2));
+
     process.exitCode = ExitCode.Clean;
   });
 

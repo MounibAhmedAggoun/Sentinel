@@ -8,6 +8,7 @@
     "commander": "^15.0.0",
     "pino": "^10.4.0",
     "zod": "^4.6.5",
-    "@sentinel/core": "*"
+    "@sentinel/core": "*",
+    "@sentinel/scanner": "*"
   }
 }
