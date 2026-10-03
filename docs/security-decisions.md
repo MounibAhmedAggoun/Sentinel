@@ -27,3 +27,27 @@ A running log. Add an entry whenever a security-relevant choice is made.
 - **Known gap:** net-guard returns the validated IPs, but later modules must
   connect to those IPs and not look the name up again. This prevents DNS
   rebinding and is enforced in Phase 3 (HTTP).
+
+  ## HTTP module (Phase 3)
+
+- **Decision:** The HTTP module connects only to an IP that net-guard has
+  already validated. A custom `lookup` on the request always returns that IP,
+  so the hostname is never resolved a second time.
+- **Why:** Resolving twice allows DNS rebinding. A hostname could resolve to a
+  public IP during validation and to an internal IP when connecting.
+- **Redirects:** Followed manually, up to 5 hops. net-guard runs on every hop,
+  so a redirect to an internal address (for example `169.254.169.254`) is
+  blocked. Only `http:` and `https:` are followed.
+- **Body size:** The response body is never downloaded. The connection is
+  closed as soon as the status and headers arrive, which also caps memory use.
+- **Timeout:** A hard timeout covers the whole request (10 seconds by default).
+- **Cookies:** Only the name and the Secure, HttpOnly, and SameSite flags are
+  recorded. Cookie values are never stored, because they may be session
+  secrets.
+- **TLS errors:** Certificate errors are reported as `TLS_ERROR` and are never
+  bypassed by the HTTP client. Reading certificate details from invalid
+  certificates is the TLS module's job (Phase 5).
+- **Alternatives considered:** Following redirects automatically with the HTTP
+  library. Rejected because it would skip the per-hop net-guard check.
+- **Known gap:** Only the first resolved IP is used, with no fallback to the
+  others. Acceptable for v1.
