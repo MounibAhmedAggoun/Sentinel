@@ -23,3 +23,13 @@ describe('checkIp', () => {
     expect(checkIp(input).allowed).toBe(true);
   });
 });
+
+describe('checkIp with allowPrivate', () => {
+  it.each(['127.0.0.1', '10.0.0.5', '192.168.1.1', '::1'])('allows %s', (input) => {
+    expect(checkIp(input, { allowPrivate: true }).allowed).toBe(true);
+  });
+
+  it.each(['169.254.169.254', 'fe80::1', '0.0.0.0'])('still blocks %s', (input) => {
+    expect(checkIp(input, { allowPrivate: true }).allowed).toBe(false);
+  });
+});
