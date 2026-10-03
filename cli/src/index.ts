@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
 import { resolveTarget } from '@sentinel/core';
-import { resolveDns } from '@sentinel/scanner';
+import { fetchHttp, resolveDns } from '@sentinel/scanner';
 import { ExitCode } from './exit-codes.js';
 import { logger } from './logger.js';
 import { targetSchema } from './validate.js';
@@ -38,7 +38,8 @@ program
     logger.info({ target, ips: result.ips }, 'target validated');
 
     const dns = await resolveDns(target);
-    console.log(JSON.stringify(dns, null, 2));
+    const http = await fetchHttp(`https://${target}/`, { allowPrivate: options.allowPrivate });
+    console.log(JSON.stringify({ dns, http }, null, 2));
 
     process.exitCode = ExitCode.Clean;
   });
