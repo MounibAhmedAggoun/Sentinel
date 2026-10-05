@@ -51,3 +51,25 @@ A running log. Add an entry whenever a security-relevant choice is made.
   library. Rejected because it would skip the per-hop net-guard check.
 - **Known gap:** Only the first resolved IP is used, with no fallback to the
   others. Acceptable for v1.
+
+## TCP module (Phase 4)
+
+- **Decision:** Port checks connect only to an IP that net-guard has already
+  validated. The check connects, notes the result, and closes. No data is sent
+  or read, so no banners or service details are collected.
+- **Port allowlist:** Users can only request ports from a fixed allowlist
+  (the 9 defaults plus a few common service ports). Anything else is rejected
+  before any connection is made.
+- **Why:** Without an allowlist, Sentinel would be a general-purpose port
+  scanner that anyone could aim at arbitrary ports.
+- **Limits:** At most 5 connections run at once, with a 3 second timeout per
+  port. This keeps scans gentle on the target.
+- **States:** `open`, `closed` (connection refused), `timeout` (no answer,
+  often a firewall), and `error` (anything else).
+- **Open ports are informational:** An open port is not a vulnerability. The
+  finding engine (Phase 6) will report open ports as informational only, and
+  only raise severity when there is supporting context.
+- **Alternatives considered:** Allowing any port from 1 to 65535. Rejected
+  because it turns the tool into an unrestricted scanner, which is out of
+  scope for v1.
+- **Known gap:** Only the first resolved IP is checked, as in the HTTP module.
