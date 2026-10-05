@@ -4,3 +4,6 @@ export type * from './dns/types.js';
 export { fetchHttp, type FetchOptions } from './http/fetch.js';
 export { parseCookies } from './http/cookies.js';
 export type * from './http/types.js';
+export { scanPorts, type TcpScanOptions, type TcpScanOutcome } from './tcp/scan.js';
+export { parsePorts, DEFAULT_PORTS, ALLOWED_PORTS } from './tcp/ports.js';
+export type * from './tcp/types.js';
