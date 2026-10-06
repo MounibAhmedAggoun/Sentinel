@@ -107,3 +107,36 @@ A running log. Add an entry whenever a security-relevant choice is made.
   exactly when they matter most.
 - **Known gaps:** Only the leaf certificate is analyzed, not the full chain.
   Only port 443 is checked by default, and only the first resolved IP is used.
+
+## Finding engine (Phase 6)
+
+- **Decision:** Findings are produced by pure functions. A rule takes a scan
+  result and returns a list of findings, with no network access and no side
+  effects. The same scan always gives the same findings in the same order.
+- **Why:** Pure rules are easy to test, easy to audit, and cannot be abused to
+  make extra connections.
+- **Evidence-based wording:** Findings say "observed" or "not observed", never
+  "vulnerable". The scanner sees configuration, not exploitability, so a
+  finding describes what was seen and why it may matter.
+- **Every finding has evidence and remediation.** The tests enforce this.
+- **No guessing on failures:** When a check failed (timeout, DNS error,
+  blocked target), the matching rules produce nothing. A failed lookup is not
+  treated as proof that a record or header is missing.
+- **Open ports are informational only.** An open port alone is not a
+  weakness, so it is never rated above informational.
+- **Severity:** Expired certificate and 7 days or less to expiry are high.
+  14 days or less is medium and 30 days or less is low. Missing headers and
+  cookie flags are low. Self-signed and hostname mismatch are medium.
+- **Untrusted data:** Header values and certificate fields come from the
+  target and may contain hostile text. Stored evidence is length-capped, and
+  values are kept as plain data. The dashboard must render evidence as text,
+  never as HTML (Phase 12).
+- **Stable IDs:** Rule IDs live in one registry and are never reused or
+  renumbered. A test checks for duplicates.
+- **CLI exit code:** `1` when any finding is low or higher, `0` otherwise.
+  Informational findings do not change the exit code.
+- **Alternatives considered:** A scoring system that rolls findings into one
+  grade. Rejected for v1 because a single number hides the evidence.
+- **Known gaps:** Header checks are presence checks, not quality checks. For
+  example, a weak CSP counts as present. The finding engine is also not yet
+  covered by tests against real-world responses.
