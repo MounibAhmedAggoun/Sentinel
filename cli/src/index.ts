@@ -3,6 +3,7 @@ import { Command } from 'commander';
 import { resolveTarget } from '@sentinel/core';
 import {
   DEFAULT_PORTS,
+  evaluate,
   fetchHttp,
   parsePorts,
   resolveDns,
@@ -56,13 +57,21 @@ program
     }
     logger.info({ target, ips: result.ips }, 'target validated');
 
+    const allowPrivate = options.allowPrivate;
     const dns = await resolveDns(target);
-    const http = await fetchHttp(`https://${target}/`, { allowPrivate: options.allowPrivate });
-    const tcp = await scanPorts(target, { ports, allowPrivate: options.allowPrivate });
-    const tls = await scanTls(target, { allowPrivate: options.allowPrivate });
-    console.log(JSON.stringify({ dns, http, tcp, tls }, null, 2));
+    const http = await fetchHttp(`https://${target}/`, { allowPrivate });
+    const httpPlain = await fetchHttp(`http://${target}/`, { allowPrivate });
+    const tcp = await scanPorts(target, { ports, allowPrivate });
+    const tls = await scanTls(target, { allowPrivate });
 
-    process.exitCode = ExitCode.Clean;
+    const scan = { target, dns, http, httpPlain, tcp, tls };
+    const findings = evaluate(scan);
+
+    console.log(JSON.stringify({ ...scan, findings }, null, 2));
+
+    // Informational findings are not problems, so only low and above count.
+    const hasFindings = findings.some((finding) => finding.severity !== 'informational');
+    process.exitCode = hasFindings ? ExitCode.Findings : ExitCode.Clean;
   });
 
 await program.parseAsync();

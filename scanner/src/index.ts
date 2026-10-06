@@ -10,3 +10,6 @@ export type * from './tcp/types.js';
 export { scanTls, type TlsScanOptions } from './tls/scan.js';
 export { analyzeCertificate, type AnalysisInput } from './tls/analyze.js';
 export type * from './tls/types.js';
+export { evaluate, ALL_RULES } from './findings/engine.js';
+export { RULE_IDS, type RuleId } from './findings/ids.js';
+export type { Finding, Rule, ScanResult } from './findings/types.js';

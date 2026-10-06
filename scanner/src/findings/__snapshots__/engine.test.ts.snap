@@ -1,0 +1,23 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`evaluate > matches a snapshot of rule IDs and severities for a bad scan 1`] = `
+[
+  "high TLS-001",
+  "medium TLS-003",
+  "medium TLS-004",
+  "low HTTP-001",
+  "low HTTP-002",
+  "low HTTP-003",
+  "low HTTP-004",
+  "low HTTP-005",
+  "low HTTP-008",
+  "low COOKIE-001",
+  "low COOKIE-002",
+  "low COOKIE-003",
+  "low DNS-001",
+  "low DNS-002",
+  "informational HTTP-006",
+  "informational DNS-003",
+  "informational TCP-001",
+]
+`;
