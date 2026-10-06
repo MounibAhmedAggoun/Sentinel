@@ -42,6 +42,29 @@ export function makeScan(overrides: Partial<ScanResult> = {}): ScanResult {
       ],
       error: null,
     },
+    httpPlain: {
+      startUrl: 'http://example.com/',
+      finalUrl: 'https://example.com/',
+      hops: [
+        {
+          url: 'http://example.com/',
+          status: 301,
+          headers: { location: 'https://example.com/' },
+          cookies: [],
+          remoteIp: '93.184.216.34',
+          timingMs: 40,
+        },
+        {
+          url: 'https://example.com/',
+          status: 200,
+          headers: { ...CLEAN_HEADERS },
+          cookies: [],
+          remoteIp: '93.184.216.34',
+          timingMs: 50,
+        },
+      ],
+      error: null,
+    },
     tcp: { ok: true, result: { ip: '93.184.216.34', ports: [] } },
     tls: {
       ok: true,

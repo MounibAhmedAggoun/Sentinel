@@ -9,6 +9,7 @@ export interface ScanResult {
   target: string;
   dns: DnsResult;
   http: HttpResult;
+  httpPlain: HttpResult;
   tcp: TcpScanOutcome;
   tls: TlsOutcome;
 }
