@@ -38,8 +38,7 @@ export interface DnsResult {
   ns: DnsLookup<string>;
   txt: DnsLookup<string>;
   caa: DnsLookup<CaaRecord>;
-  /** Parsed from TXT. Null when no SPF record was found. */
+  dmarcTxt: DnsLookup<string>;
   spf: SpfRecord | null;
-  /** Parsed from _dmarc.<hostname> TXT. Null when no DMARC record was found. */
   dmarc: DmarcRecord | null;
 }

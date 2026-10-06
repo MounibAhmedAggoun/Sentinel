@@ -55,6 +55,7 @@ export async function resolveDns(
     ns,
     txt,
     caa,
+    dmarcTxt,
     spf: txt.ok ? parseSpf(txt.records) : null,
     dmarc: dmarcTxt.ok ? parseDmarc(dmarcTxt.records) : null,
   };

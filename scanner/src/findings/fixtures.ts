@@ -24,6 +24,7 @@ export function makeScan(overrides: Partial<ScanResult> = {}): ScanResult {
       ns: { ok: true, records: ['ns1.example.com'] },
       txt: { ok: true, records: ['v=spf1 -all'] },
       caa: { ok: true, records: [{ critical: false, tag: 'issue', value: 'letsencrypt.org' }] },
+      dmarcTxt: { ok: true, records: ['v=DMARC1; p=reject'] },
       spf: { raw: 'v=spf1 -all', all: '-all' },
       dmarc: { raw: 'v=DMARC1; p=reject', policy: 'reject' },
     },
