@@ -1,0 +1,67 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`headerRules > matches a snapshot for a bare response 1`] = `
+[
+  {
+    "description": "The Content-Security-Policy header was not observed in the response from https://example.com/. A CSP can limit which sources a page may load scripts and other content from, which reduces the impact of cross-site scripting.",
+    "evidence": {
+      "header": "Content-Security-Policy",
+      "present": false,
+      "url": "https://example.com/",
+    },
+    "remediation": "Review whether a Content-Security-Policy suits this site, and consider starting in report-only mode.",
+    "ruleId": "HTTP-001",
+    "severity": "low",
+    "title": "Security header not observed: Content-Security-Policy",
+  },
+  {
+    "description": "The Strict-Transport-Security header was not observed in the response from https://example.com/. HSTS tells browsers to use HTTPS only, which protects against downgrade attempts.",
+    "evidence": {
+      "header": "Strict-Transport-Security",
+      "present": false,
+      "url": "https://example.com/",
+    },
+    "remediation": "Consider adding Strict-Transport-Security with a suitable max-age once the whole site works over HTTPS.",
+    "ruleId": "HTTP-002",
+    "severity": "low",
+    "title": "Security header not observed: Strict-Transport-Security",
+  },
+  {
+    "description": "The X-Content-Type-Options header was not observed in the response from https://example.com/. The nosniff value stops browsers from guessing content types, which can reduce some content-confusion issues.",
+    "evidence": {
+      "header": "X-Content-Type-Options",
+      "present": false,
+      "url": "https://example.com/",
+      "value": null,
+    },
+    "remediation": "Consider adding X-Content-Type-Options: nosniff.",
+    "ruleId": "HTTP-003",
+    "severity": "low",
+    "title": "Security header not observed: X-Content-Type-Options",
+  },
+  {
+    "description": "The X-Frame-Options or CSP frame-ancestors header was not observed in the response from https://example.com/. Without either, other sites may be able to embed this page in a frame, which can enable clickjacking.",
+    "evidence": {
+      "cspFrameAncestorsPresent": false,
+      "url": "https://example.com/",
+      "xFrameOptionsPresent": false,
+    },
+    "remediation": "Consider adding a CSP frame-ancestors directive (or X-Frame-Options) that limits who can frame the site.",
+    "ruleId": "HTTP-004",
+    "severity": "low",
+    "title": "Security header not observed: X-Frame-Options or CSP frame-ancestors",
+  },
+  {
+    "description": "The Referrer-Policy header was not observed in the response from https://example.com/. Without a policy, browsers decide how much of the page URL is sent to other sites.",
+    "evidence": {
+      "header": "Referrer-Policy",
+      "present": false,
+      "url": "https://example.com/",
+    },
+    "remediation": "Consider adding a Referrer-Policy such as strict-origin-when-cross-origin.",
+    "ruleId": "HTTP-005",
+    "severity": "low",
+    "title": "Security header not observed: Referrer-Policy",
+  },
+]
+`;
