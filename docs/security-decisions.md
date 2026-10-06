@@ -73,3 +73,37 @@ A running log. Add an entry whenever a security-relevant choice is made.
   because it turns the tool into an unrestricted scanner, which is out of
   scope for v1.
 - **Known gap:** Only the first resolved IP is checked, as in the HTTP module.
+
+## TLS module (Phase 5)
+
+- **Decision:** The TLS module connects with `rejectUnauthorized: false`. This
+  is the only place in Sentinel where certificate verification is turned off,
+  and it is for observation only.
+- **Why:** With verification on, an expired, self-signed, or mismatched
+  certificate makes the handshake fail, so there is nothing left to read or
+  report. Those are exactly the cases the scanner exists to find.
+- **What keeps this safe:**
+  - No data is sent after the handshake. The connection is closed as soon as
+    the certificate has been read, so nothing sensitive can be sent to an
+    unverified server.
+  - Validity is computed separately (expiry, self-signed, hostname match) and
+    reported in an `analysis` block. A failed check becomes a finding in
+    Phase 6, never a silent pass.
+  - The connection goes only to the IP net-guard already validated, so a
+    hostname is never resolved a second time.
+- **The HTTP module is different:** It does not bypass certificate checks.
+  A bad certificate there is reported as `TLS_ERROR`. Only this module is
+  allowed to observe invalid certificates.
+- **Self-signed detection:** A certificate is treated as self-signed when its
+  subject and issuer are identical. This does not verify the signature, so it
+  is a heuristic.
+- **Hostname matching:** Uses Node's `checkServerIdentity`, which handles
+  wildcards and IP addresses correctly. Not hand-written.
+- **Expiry thresholds:** This module only reports `daysUntilExpiry`. The 30,
+  14, and 7 day thresholds and their severities are applied by the finding
+  engine in Phase 6.
+- **Alternatives considered:** Connecting with verification on and parsing the
+  error code. Rejected because the certificate details would be unavailable
+  exactly when they matter most.
+- **Known gaps:** Only the leaf certificate is analyzed, not the full chain.
+  Only port 443 is checked by default, and only the first resolved IP is used.
