@@ -7,3 +7,6 @@ export type * from './http/types.js';
 export { scanPorts, type TcpScanOptions, type TcpScanOutcome } from './tcp/scan.js';
 export { parsePorts, DEFAULT_PORTS, ALLOWED_PORTS } from './tcp/ports.js';
 export type * from './tcp/types.js';
+export { scanTls, type TlsScanOptions } from './tls/scan.js';
+export { analyzeCertificate, type AnalysisInput } from './tls/analyze.js';
+export type * from './tls/types.js';

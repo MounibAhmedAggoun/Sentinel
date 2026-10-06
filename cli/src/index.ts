@@ -1,7 +1,14 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
 import { resolveTarget } from '@sentinel/core';
-import { DEFAULT_PORTS, fetchHttp, parsePorts, resolveDns, scanPorts } from '@sentinel/scanner';
+import {
+  DEFAULT_PORTS,
+  fetchHttp,
+  parsePorts,
+  resolveDns,
+  scanPorts,
+  scanTls,
+} from '@sentinel/scanner';
 import { ExitCode } from './exit-codes.js';
 import { logger } from './logger.js';
 import { targetSchema } from './validate.js';
@@ -52,7 +59,8 @@ program
     const dns = await resolveDns(target);
     const http = await fetchHttp(`https://${target}/`, { allowPrivate: options.allowPrivate });
     const tcp = await scanPorts(target, { ports, allowPrivate: options.allowPrivate });
-    console.log(JSON.stringify({ dns, http, tcp }, null, 2));
+    const tls = await scanTls(target, { allowPrivate: options.allowPrivate });
+    console.log(JSON.stringify({ dns, http, tcp, tls }, null, 2));
 
     process.exitCode = ExitCode.Clean;
   });
