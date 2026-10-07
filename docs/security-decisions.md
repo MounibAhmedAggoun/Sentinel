@@ -140,3 +140,33 @@ A running log. Add an entry whenever a security-relevant choice is made.
 - **Known gaps:** Header checks are presence checks, not quality checks. For
   example, a weak CSP counts as present. The finding engine is also not yet
   covered by tests against real-world responses.
+
+## Reports and CLI output (Phase 7)
+
+- **Decision:** Reports have an explicit `schemaVersion` and are validated
+  against a zod schema before they are returned or written. Sentinel cannot
+  write a report that breaks its own format.
+- **No secrets in reports:** Raw `Set-Cookie` values can be live session
+  tokens. The report builder replaces them with `name=[redacted]`. Cookie
+  flags are kept separately. Tests check that no cookie value appears.
+- **Report files are private:** Files are written with mode `600` (owner read
+  and write only) and via a temporary file and rename, so a crash cannot leave
+  a half-written report.
+- **Terminal output is sanitized:** Header values, certificate fields, and
+  other text from the target can contain terminal escape sequences or
+  newlines. The formatter replaces control characters before printing, so a
+  hostile server cannot rewrite or fake what the terminal shows.
+- **Failed checks are not findings:** A check that did not complete (timeout,
+  blocked target) goes in the report's `errors` list. Findings describe the
+  target, and errors describe the scan.
+- **`validate` command:** Reads a report with a 10 MB size cap and returns
+  structured errors instead of throwing. Report files are treated as
+  untrusted input.
+- **Published schema:** `docs/report.schema.json` is generated from the zod
+  schema, so other tools can validate reports without our code.
+- **Alternatives considered:** Storing cookie values hashed. Rejected because
+  names and flags are all the rules need, and not storing values is simpler to
+  reason about.
+- **Known gaps:** Other headers (for example `Authorization` echoed back by a
+  misconfigured server) are not redacted. Report files are not encrypted at
+  rest.
