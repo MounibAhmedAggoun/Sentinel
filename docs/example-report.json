@@ -1,0 +1,275 @@
+{
+  "schemaVersion": "1.0",
+  "tool": {
+    "name": "sentinel",
+    "version": "0.1.0"
+  },
+  "target": "example.com",
+  "startedAt": "2026-10-07T10:19:15.780Z",
+  "finishedAt": "2026-10-07T10:19:16.645Z",
+  "durationMs": 865,
+  "dns": {
+    "hostname": "example.com",
+    "a": {
+      "ok": true,
+      "records": ["172.66.147.243", "104.20.23.154"]
+    },
+    "aaaa": {
+      "ok": true,
+      "records": ["2606:4700:10::6814:179a", "2606:4700:10::ac42:93f3"]
+    },
+    "mx": {
+      "ok": true,
+      "records": [
+        {
+          "exchange": "",
+          "priority": 0
+        }
+      ]
+    },
+    "ns": {
+      "ok": true,
+      "records": ["hera.ns.cloudflare.com", "elliott.ns.cloudflare.com"]
+    },
+    "txt": {
+      "ok": true,
+      "records": ["v=spf1 -all", "_k2n1y4vw3qtb4skdx9e7dxt97qrmmq9"]
+    },
+    "caa": {
+      "ok": false,
+      "error": {
+        "code": "NODATA",
+        "message": "queryCaa ENODATA example.com"
+      }
+    },
+    "dmarcTxt": {
+      "ok": true,
+      "records": ["v=DMARC1;p=reject;sp=reject;adkim=s;aspf=s"]
+    },
+    "spf": {
+      "raw": "v=spf1 -all",
+      "all": "-all"
+    },
+    "dmarc": {
+      "raw": "v=DMARC1;p=reject;sp=reject;adkim=s;aspf=s",
+      "policy": "reject"
+    }
+  },
+  "http": {
+    "startUrl": "https://example.com/",
+    "finalUrl": "https://example.com/",
+    "hops": [
+      {
+        "url": "https://example.com/",
+        "status": 200,
+        "headers": {
+          "date": "Wed, 07 Oct 2026 09:19:35 GMT",
+          "content-type": "text/html; charset=utf-8",
+          "transfer-encoding": "chunked",
+          "connection": "close",
+          "server": "cloudflare",
+          "last-modified": "Sun, 04 Oct 2026 20:44:03 GMT",
+          "allow": "GET, HEAD",
+          "accept-ranges": "bytes",
+          "age": "3909",
+          "cf-cache-status": "HIT",
+          "cf-ray": "a46bd33839dd647c-ORN",
+          "alt-svc": "h3=\":443\"; ma=86400"
+        },
+        "cookies": [],
+        "remoteIp": "104.20.23.154",
+        "timingMs": 238
+      }
+    ],
+    "error": null
+  },
+  "httpPlain": {
+    "startUrl": "http://example.com/",
+    "finalUrl": "http://example.com/",
+    "hops": [
+      {
+        "url": "http://example.com/",
+        "status": 200,
+        "headers": {
+          "date": "Wed, 07 Oct 2026 09:19:35 GMT",
+          "content-type": "text/html; charset=utf-8",
+          "transfer-encoding": "chunked",
+          "connection": "close",
+          "server": "cloudflare",
+          "last-modified": "Sun, 04 Oct 2026 20:44:03 GMT",
+          "allow": "GET, HEAD",
+          "accept-ranges": "bytes",
+          "age": "3819",
+          "cf-cache-status": "HIT",
+          "cf-ray": "a46bd3397a2bba98-ALG",
+          "alt-svc": "h3=\":443\"; ma=86400"
+        },
+        "cookies": [],
+        "remoteIp": "172.66.147.243",
+        "timingMs": 98
+      }
+    ],
+    "error": null
+  },
+  "tcp": {
+    "ok": true,
+    "result": {
+      "ip": "104.20.23.154",
+      "ports": [
+        {
+          "port": 80,
+          "state": "open",
+          "timingMs": 39
+        },
+        {
+          "port": 443,
+          "state": "open",
+          "timingMs": 44
+        }
+      ]
+    }
+  },
+  "tls": {
+    "ok": true,
+    "result": {
+      "ip": "172.66.147.243",
+      "protocol": "TLSv1.3",
+      "cipher": "TLS_AES_256_GCM_SHA384",
+      "certificate": {
+        "subject": {
+          "commonName": "example.com",
+          "organization": null
+        },
+        "issuer": {
+          "commonName": "Cloudflare TLS Issuing ECC CA 3",
+          "organization": "SSL Corporation"
+        },
+        "san": ["example.com", "*.example.com"],
+        "validFrom": "2026-09-26T22:49:11.000Z",
+        "validTo": "2026-12-25T22:56:35.000Z",
+        "serialNumber": "01EEE6AABB521D5E14FC315FD9985690",
+        "fingerprint256": "85:CA:6A:B0:68:E9:BC:CE:88:B6:C4:AA:3C:47:F7:D1:72:28:13:4A:45:7F:87:0D:38:00:E6:22:3A:0D:F0:7A"
+      },
+      "analysis": {
+        "expired": false,
+        "daysUntilExpiry": 79,
+        "selfSigned": false,
+        "hostnameMatches": true
+      }
+    }
+  },
+  "findings": [
+    {
+      "ruleId": "HTTP-001",
+      "title": "Security header not observed: Content-Security-Policy",
+      "severity": "low",
+      "description": "The Content-Security-Policy header was not observed in the response from https://example.com/. A CSP can limit which sources a page may load scripts and other content from, which reduces the impact of cross-site scripting.",
+      "evidence": {
+        "header": "Content-Security-Policy",
+        "present": false,
+        "url": "https://example.com/"
+      },
+      "remediation": "Review whether a Content-Security-Policy suits this site, and consider starting in report-only mode."
+    },
+    {
+      "ruleId": "HTTP-002",
+      "title": "Security header not observed: Strict-Transport-Security",
+      "severity": "low",
+      "description": "The Strict-Transport-Security header was not observed in the response from https://example.com/. HSTS tells browsers to use HTTPS only, which protects against downgrade attempts.",
+      "evidence": {
+        "header": "Strict-Transport-Security",
+        "present": false,
+        "url": "https://example.com/"
+      },
+      "remediation": "Consider adding Strict-Transport-Security with a suitable max-age once the whole site works over HTTPS."
+    },
+    {
+      "ruleId": "HTTP-003",
+      "title": "Security header not observed: X-Content-Type-Options",
+      "severity": "low",
+      "description": "The X-Content-Type-Options header was not observed in the response from https://example.com/. The nosniff value stops browsers from guessing content types, which can reduce some content-confusion issues.",
+      "evidence": {
+        "header": "X-Content-Type-Options",
+        "present": false,
+        "value": null,
+        "url": "https://example.com/"
+      },
+      "remediation": "Consider adding X-Content-Type-Options: nosniff."
+    },
+    {
+      "ruleId": "HTTP-004",
+      "title": "Security header not observed: X-Frame-Options or CSP frame-ancestors",
+      "severity": "low",
+      "description": "The X-Frame-Options or CSP frame-ancestors header was not observed in the response from https://example.com/. Without either, other sites may be able to embed this page in a frame, which can enable clickjacking.",
+      "evidence": {
+        "xFrameOptionsPresent": false,
+        "cspFrameAncestorsPresent": false,
+        "url": "https://example.com/"
+      },
+      "remediation": "Consider adding a CSP frame-ancestors directive (or X-Frame-Options) that limits who can frame the site."
+    },
+    {
+      "ruleId": "HTTP-005",
+      "title": "Security header not observed: Referrer-Policy",
+      "severity": "low",
+      "description": "The Referrer-Policy header was not observed in the response from https://example.com/. Without a policy, browsers decide how much of the page URL is sent to other sites.",
+      "evidence": {
+        "header": "Referrer-Policy",
+        "present": false,
+        "url": "https://example.com/"
+      },
+      "remediation": "Consider adding a Referrer-Policy such as strict-origin-when-cross-origin."
+    },
+    {
+      "ruleId": "HTTP-008",
+      "title": "Redirect from HTTP to HTTPS not observed",
+      "severity": "low",
+      "description": "A request to http://example.com/ was answered over plain HTTP and did not redirect to HTTPS. Visitors who use the http:// address may stay on an unencrypted connection.",
+      "evidence": {
+        "startUrl": "http://example.com/",
+        "finalUrl": "http://example.com/",
+        "finalStatus": 200,
+        "hops": 1
+      },
+      "remediation": "Consider redirecting all HTTP requests to HTTPS, and pair it with an HSTS header once the whole site works over HTTPS."
+    },
+    {
+      "ruleId": "DNS-003",
+      "title": "CAA record not observed",
+      "severity": "informational",
+      "description": "No CAA record was observed for example.com. CAA records restrict which certificate authorities may issue certificates for a domain.",
+      "evidence": {
+        "hostname": "example.com",
+        "present": false
+      },
+      "remediation": "Consider adding a CAA record naming the certificate authorities you use."
+    },
+    {
+      "ruleId": "TCP-001",
+      "title": "TCP port 80 observed open",
+      "severity": "informational",
+      "description": "Port 80 on example.com accepted a TCP connection. This is normal for a web server.",
+      "evidence": {
+        "port": 80,
+        "state": "open",
+        "ip": "104.20.23.154",
+        "timingMs": 39
+      },
+      "remediation": "No action needed if this port is meant to be public."
+    },
+    {
+      "ruleId": "TCP-001",
+      "title": "TCP port 443 observed open",
+      "severity": "informational",
+      "description": "Port 443 on example.com accepted a TCP connection. This is normal for a web server.",
+      "evidence": {
+        "port": 443,
+        "state": "open",
+        "ip": "104.20.23.154",
+        "timingMs": 44
+      },
+      "remediation": "No action needed if this port is meant to be public."
+    }
+  ],
+  "errors": []
+}
