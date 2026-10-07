@@ -5,6 +5,7 @@
   "type": "module",
   "main": "src/index.ts",
   "dependencies": {
-    "@sentinel/core": "*"
+    "@sentinel/core": "*",
+    "zod": "^4.6.5"
   }
 }

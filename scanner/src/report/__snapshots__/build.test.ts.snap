@@ -1,0 +1,230 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`buildReport > matches a snapshot 1`] = `
+{
+  "dns": {
+    "a": {
+      "ok": true,
+      "records": [
+        "93.184.216.34",
+      ],
+    },
+    "aaaa": {
+      "ok": true,
+      "records": [],
+    },
+    "caa": {
+      "ok": true,
+      "records": [
+        {
+          "critical": false,
+          "tag": "issue",
+          "value": "letsencrypt.org",
+        },
+      ],
+    },
+    "dmarc": {
+      "policy": "reject",
+      "raw": "v=DMARC1; p=reject",
+    },
+    "dmarcTxt": {
+      "ok": true,
+      "records": [
+        "v=DMARC1; p=reject",
+      ],
+    },
+    "hostname": "example.com",
+    "mx": {
+      "ok": true,
+      "records": [],
+    },
+    "ns": {
+      "ok": true,
+      "records": [
+        "ns1.example.com",
+      ],
+    },
+    "spf": {
+      "all": "-all",
+      "raw": "v=spf1 -all",
+    },
+    "txt": {
+      "ok": true,
+      "records": [
+        "v=spf1 -all",
+      ],
+    },
+  },
+  "durationMs": 2500,
+  "errors": [],
+  "findings": [
+    {
+      "description": "The Content-Security-Policy header was not observed in the response from https://example.com/. A CSP can limit which sources a page may load scripts and other content from, which reduces the impact of cross-site scripting.",
+      "evidence": {
+        "header": "Content-Security-Policy",
+        "present": false,
+        "url": "https://example.com/",
+      },
+      "remediation": "Review whether a Content-Security-Policy suits this site, and consider starting in report-only mode.",
+      "ruleId": "HTTP-001",
+      "severity": "low",
+      "title": "Security header not observed: Content-Security-Policy",
+    },
+    {
+      "description": "The Strict-Transport-Security header was not observed in the response from https://example.com/. HSTS tells browsers to use HTTPS only, which protects against downgrade attempts.",
+      "evidence": {
+        "header": "Strict-Transport-Security",
+        "present": false,
+        "url": "https://example.com/",
+      },
+      "remediation": "Consider adding Strict-Transport-Security with a suitable max-age once the whole site works over HTTPS.",
+      "ruleId": "HTTP-002",
+      "severity": "low",
+      "title": "Security header not observed: Strict-Transport-Security",
+    },
+    {
+      "description": "The X-Content-Type-Options header was not observed in the response from https://example.com/. The nosniff value stops browsers from guessing content types, which can reduce some content-confusion issues.",
+      "evidence": {
+        "header": "X-Content-Type-Options",
+        "present": false,
+        "url": "https://example.com/",
+        "value": null,
+      },
+      "remediation": "Consider adding X-Content-Type-Options: nosniff.",
+      "ruleId": "HTTP-003",
+      "severity": "low",
+      "title": "Security header not observed: X-Content-Type-Options",
+    },
+    {
+      "description": "The X-Frame-Options or CSP frame-ancestors header was not observed in the response from https://example.com/. Without either, other sites may be able to embed this page in a frame, which can enable clickjacking.",
+      "evidence": {
+        "cspFrameAncestorsPresent": false,
+        "url": "https://example.com/",
+        "xFrameOptionsPresent": false,
+      },
+      "remediation": "Consider adding a CSP frame-ancestors directive (or X-Frame-Options) that limits who can frame the site.",
+      "ruleId": "HTTP-004",
+      "severity": "low",
+      "title": "Security header not observed: X-Frame-Options or CSP frame-ancestors",
+    },
+    {
+      "description": "The Referrer-Policy header was not observed in the response from https://example.com/. Without a policy, browsers decide how much of the page URL is sent to other sites.",
+      "evidence": {
+        "header": "Referrer-Policy",
+        "present": false,
+        "url": "https://example.com/",
+      },
+      "remediation": "Consider adding a Referrer-Policy such as strict-origin-when-cross-origin.",
+      "ruleId": "HTTP-005",
+      "severity": "low",
+      "title": "Security header not observed: Referrer-Policy",
+    },
+    {
+      "description": "The Server header on https://example.com/ includes version-like text. Version details can help someone look up issues known for that exact software.",
+      "evidence": {
+        "header": "Server",
+        "url": "https://example.com/",
+        "value": "Apache/2.4.41",
+      },
+      "remediation": "Consider configuring the server to remove version details from the Server header. Keeping the software up to date matters more than hiding its version.",
+      "ruleId": "HTTP-006",
+      "severity": "informational",
+      "title": "Version information observed in Server header",
+    },
+  ],
+  "finishedAt": "2026-10-01T10:00:02.500Z",
+  "http": {
+    "error": null,
+    "finalUrl": "https://example.com/",
+    "hops": [
+      {
+        "cookies": [],
+        "headers": {
+          "server": "Apache/2.4.41",
+        },
+        "remoteIp": "93.184.216.34",
+        "status": 200,
+        "timingMs": 50,
+        "url": "https://example.com/",
+      },
+    ],
+    "startUrl": "https://example.com/",
+  },
+  "httpPlain": {
+    "error": null,
+    "finalUrl": "https://example.com/",
+    "hops": [
+      {
+        "cookies": [],
+        "headers": {
+          "location": "https://example.com/",
+        },
+        "remoteIp": "93.184.216.34",
+        "status": 301,
+        "timingMs": 40,
+        "url": "http://example.com/",
+      },
+      {
+        "cookies": [],
+        "headers": {
+          "content-security-policy": "default-src 'self'; frame-ancestors 'none'",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "strict-transport-security": "max-age=31536000; includeSubDomains",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "DENY",
+        },
+        "remoteIp": "93.184.216.34",
+        "status": 200,
+        "timingMs": 50,
+        "url": "https://example.com/",
+      },
+    ],
+    "startUrl": "http://example.com/",
+  },
+  "schemaVersion": "1.0",
+  "startedAt": "2026-10-01T10:00:00.000Z",
+  "target": "example.com",
+  "tcp": {
+    "ok": true,
+    "result": {
+      "ip": "93.184.216.34",
+      "ports": [],
+    },
+  },
+  "tls": {
+    "ok": true,
+    "result": {
+      "analysis": {
+        "daysUntilExpiry": 90,
+        "expired": false,
+        "hostnameMatches": true,
+        "selfSigned": false,
+      },
+      "certificate": {
+        "fingerprint256": "AA:BB",
+        "issuer": {
+          "commonName": "Some CA",
+          "organization": "Some Org",
+        },
+        "san": [
+          "example.com",
+        ],
+        "serialNumber": "01",
+        "subject": {
+          "commonName": "example.com",
+          "organization": null,
+        },
+        "validFrom": "2026-01-01T00:00:00.000Z",
+        "validTo": "2027-01-01T00:00:00.000Z",
+      },
+      "cipher": "TLS_AES_256_GCM_SHA384",
+      "ip": "93.184.216.34",
+      "protocol": "TLSv1.3",
+    },
+  },
+  "tool": {
+    "name": "sentinel",
+    "version": "0.1.0",
+  },
+}
+`;
