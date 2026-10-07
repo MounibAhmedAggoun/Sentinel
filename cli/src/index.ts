@@ -13,9 +13,10 @@ import {
   writeReport,
 } from '@sentinel/scanner';
 import { ExitCode } from './exit-codes.js';
-import { formatTerminal } from './format.js';
+import { formatTerminal, sanitize } from './format.js';
 import { logger } from './logger.js';
 import { targetSchema } from './validate.js';
+import { validateReportFile } from './validate-report.js';
 
 const VERSION = '0.1.0';
 
@@ -108,5 +109,25 @@ program
       process.exitCode = hasFindings ? ExitCode.Findings : ExitCode.Clean;
     },
   );
+
+program
+  .command('validate')
+  .description('Check that a file is a valid Sentinel report')
+  .argument('<file>', 'path to a JSON report')
+  .action(async (file: string) => {
+    const outcome = await validateReportFile(file);
+    if (!outcome.ok) {
+      console.error(`Invalid report: ${sanitize(outcome.error)}`);
+      process.exitCode = ExitCode.Usage;
+      return;
+    }
+
+    const { report } = outcome;
+    console.log(
+      `Valid Sentinel report (schema ${report.schemaVersion}) for ${sanitize(report.target)}: ` +
+        `${report.findings.length} finding(s), ${report.errors.length} check error(s).`,
+    );
+    process.exitCode = ExitCode.Clean;
+  });
 
 await program.parseAsync();
