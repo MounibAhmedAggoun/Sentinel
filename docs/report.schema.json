@@ -1,0 +1,928 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Sentinel scan report",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "tool": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "const": "sentinel"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": ["name", "version"],
+      "additionalProperties": false
+    },
+    "target": {
+      "type": "string"
+    },
+    "startedAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+    },
+    "finishedAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+    },
+    "durationMs": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "dns": {
+      "type": "object",
+      "properties": {
+        "hostname": {
+          "type": "string"
+        },
+        "a": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "type": "boolean",
+                  "const": true
+                },
+                "records": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": ["ok", "records"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "type": "boolean",
+                  "const": false
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["code", "message"],
+                  "additionalProperties": false
+                }
+              },
+              "required": ["ok", "error"],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "aaaa": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "type": "boolean",
+                  "const": true
+                },
+                "records": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": ["ok", "records"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "type": "boolean",
+                  "const": false
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["code", "message"],
+                  "additionalProperties": false
+                }
+              },
+              "required": ["ok", "error"],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "mx": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "type": "boolean",
+                  "const": true
+                },
+                "records": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "exchange": {
+                        "type": "string"
+                      },
+                      "priority": {
+                        "type": "number"
+                      }
+                    },
+                    "required": ["exchange", "priority"],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": ["ok", "records"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "type": "boolean",
+                  "const": false
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["code", "message"],
+                  "additionalProperties": false
+                }
+              },
+              "required": ["ok", "error"],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "ns": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "type": "boolean",
+                  "const": true
+                },
+                "records": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": ["ok", "records"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "type": "boolean",
+                  "const": false
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["code", "message"],
+                  "additionalProperties": false
+                }
+              },
+              "required": ["ok", "error"],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "txt": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "type": "boolean",
+                  "const": true
+                },
+                "records": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": ["ok", "records"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "type": "boolean",
+                  "const": false
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["code", "message"],
+                  "additionalProperties": false
+                }
+              },
+              "required": ["ok", "error"],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "caa": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "type": "boolean",
+                  "const": true
+                },
+                "records": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "critical": {
+                        "type": "boolean"
+                      },
+                      "tag": {
+                        "type": "string"
+                      },
+                      "value": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["critical", "tag", "value"],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": ["ok", "records"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "type": "boolean",
+                  "const": false
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["code", "message"],
+                  "additionalProperties": false
+                }
+              },
+              "required": ["ok", "error"],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "dmarcTxt": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "type": "boolean",
+                  "const": true
+                },
+                "records": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": ["ok", "records"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "type": "boolean",
+                  "const": false
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["code", "message"],
+                  "additionalProperties": false
+                }
+              },
+              "required": ["ok", "error"],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "spf": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "raw": {
+                  "type": "string"
+                },
+                "all": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": ["-all", "~all", "?all", "+all"]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": ["raw", "all"],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "dmarc": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "raw": {
+                  "type": "string"
+                },
+                "policy": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": ["none", "quarantine", "reject"]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": ["raw", "policy"],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": ["hostname", "a", "aaaa", "mx", "ns", "txt", "caa", "dmarcTxt", "spf", "dmarc"],
+      "additionalProperties": false
+    },
+    "http": {
+      "type": "object",
+      "properties": {
+        "startUrl": {
+          "type": "string"
+        },
+        "finalUrl": {
+          "type": ["string", "null"]
+        },
+        "hops": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string"
+              },
+              "status": {
+                "type": "number"
+              },
+              "headers": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  ]
+                }
+              },
+              "cookies": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "secure": {
+                      "type": "boolean"
+                    },
+                    "httpOnly": {
+                      "type": "boolean"
+                    },
+                    "sameSite": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": ["strict", "lax", "none"]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["name", "secure", "httpOnly", "sameSite"],
+                  "additionalProperties": false
+                }
+              },
+              "remoteIp": {
+                "type": "string"
+              },
+              "timingMs": {
+                "type": "number"
+              }
+            },
+            "required": ["url", "status", "headers", "cookies", "remoteIp", "timingMs"],
+            "additionalProperties": false
+          }
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": ["code", "message"],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": ["startUrl", "finalUrl", "hops", "error"],
+      "additionalProperties": false
+    },
+    "httpPlain": {
+      "type": "object",
+      "properties": {
+        "startUrl": {
+          "type": "string"
+        },
+        "finalUrl": {
+          "type": ["string", "null"]
+        },
+        "hops": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string"
+              },
+              "status": {
+                "type": "number"
+              },
+              "headers": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  ]
+                }
+              },
+              "cookies": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "secure": {
+                      "type": "boolean"
+                    },
+                    "httpOnly": {
+                      "type": "boolean"
+                    },
+                    "sameSite": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": ["strict", "lax", "none"]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["name", "secure", "httpOnly", "sameSite"],
+                  "additionalProperties": false
+                }
+              },
+              "remoteIp": {
+                "type": "string"
+              },
+              "timingMs": {
+                "type": "number"
+              }
+            },
+            "required": ["url", "status", "headers", "cookies", "remoteIp", "timingMs"],
+            "additionalProperties": false
+          }
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": ["code", "message"],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": ["startUrl", "finalUrl", "hops", "error"],
+      "additionalProperties": false
+    },
+    "tcp": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "ok": {
+              "type": "boolean",
+              "const": true
+            },
+            "result": {
+              "type": "object",
+              "properties": {
+                "ip": {
+                  "type": "string"
+                },
+                "ports": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "port": {
+                        "type": "number"
+                      },
+                      "state": {
+                        "type": "string",
+                        "enum": ["open", "closed", "timeout", "error"]
+                      },
+                      "timingMs": {
+                        "type": "number"
+                      },
+                      "error": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["port", "state", "timingMs"],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": ["ip", "ports"],
+              "additionalProperties": false
+            }
+          },
+          "required": ["ok", "result"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "ok": {
+              "type": "boolean",
+              "const": false
+            },
+            "error": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": ["code", "message"],
+              "additionalProperties": false
+            }
+          },
+          "required": ["ok", "error"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "tls": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "ok": {
+              "type": "boolean",
+              "const": true
+            },
+            "result": {
+              "type": "object",
+              "properties": {
+                "ip": {
+                  "type": "string"
+                },
+                "protocol": {
+                  "type": ["string", "null"]
+                },
+                "cipher": {
+                  "type": ["string", "null"]
+                },
+                "certificate": {
+                  "type": "object",
+                  "properties": {
+                    "subject": {
+                      "type": "object",
+                      "properties": {
+                        "commonName": {
+                          "type": ["string", "null"]
+                        },
+                        "organization": {
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "required": ["commonName", "organization"],
+                      "additionalProperties": false
+                    },
+                    "issuer": {
+                      "type": "object",
+                      "properties": {
+                        "commonName": {
+                          "type": ["string", "null"]
+                        },
+                        "organization": {
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "required": ["commonName", "organization"],
+                      "additionalProperties": false
+                    },
+                    "san": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "validFrom": {
+                      "type": "string"
+                    },
+                    "validTo": {
+                      "type": "string"
+                    },
+                    "serialNumber": {
+                      "type": "string"
+                    },
+                    "fingerprint256": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "subject",
+                    "issuer",
+                    "san",
+                    "validFrom",
+                    "validTo",
+                    "serialNumber",
+                    "fingerprint256"
+                  ],
+                  "additionalProperties": false
+                },
+                "analysis": {
+                  "type": "object",
+                  "properties": {
+                    "expired": {
+                      "type": "boolean"
+                    },
+                    "daysUntilExpiry": {
+                      "type": "number"
+                    },
+                    "selfSigned": {
+                      "type": "boolean"
+                    },
+                    "hostnameMatches": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["expired", "daysUntilExpiry", "selfSigned", "hostnameMatches"],
+                  "additionalProperties": false
+                }
+              },
+              "required": ["ip", "protocol", "cipher", "certificate", "analysis"],
+              "additionalProperties": false
+            }
+          },
+          "required": ["ok", "result"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "ok": {
+              "type": "boolean",
+              "const": false
+            },
+            "error": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": ["code", "message"],
+              "additionalProperties": false
+            }
+          },
+          "required": ["ok", "error"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "ruleId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["informational", "low", "medium", "high"]
+          },
+          "description": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "remediation": {
+            "type": "string"
+          }
+        },
+        "required": ["ruleId", "title", "severity", "description", "evidence", "remediation"],
+        "additionalProperties": false
+      }
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "module": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": ["module", "code", "message"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "tool",
+    "target",
+    "startedAt",
+    "finishedAt",
+    "durationMs",
+    "dns",
+    "http",
+    "httpPlain",
+    "tcp",
+    "tls",
+    "findings",
+    "errors"
+  ],
+  "additionalProperties": false
+}
