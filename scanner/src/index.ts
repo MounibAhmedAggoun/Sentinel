@@ -13,3 +13,7 @@ export type * from './tls/types.js';
 export { evaluate, ALL_RULES } from './findings/engine.js';
 export { RULE_IDS, type RuleId } from './findings/ids.js';
 export type { Finding, Rule, ScanResult } from './findings/types.js';
+export { buildReport, type BuildReportInput } from './report/build.js';
+export { writeReport } from './report/write.js';
+export { reportSchema, SCHEMA_VERSION, type Report } from './report/schema.js';
+export { reportJsonSchema } from './report/json-schema.js';
