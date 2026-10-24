@@ -28,7 +28,7 @@ A running log. Add an entry whenever a security-relevant choice is made.
   connect to those IPs and not look the name up again. This prevents DNS
   rebinding and is enforced in Phase 3 (HTTP).
 
-  ## HTTP module (Phase 3)
+## HTTP module (Phase 3)
 
 - **Decision:** The HTTP module connects only to an IP that net-guard has
   already validated. A custom `lookup` on the request always returns that IP,
