@@ -19,7 +19,7 @@ import { countFailedModules } from './module-failures.js';
 import { targetSchema } from './validate.js';
 import { validateReportFile } from './validate-report.js';
 
-const VERSION = '0.1.0';
+import { VERSION } from './version.js';
 
 const program = new Command();
 

@@ -65,7 +65,7 @@ export function requestOnce(
         lookup: pinnedLookup,
         agent: false,
         headers: {
-          'user-agent': 'Sentinel/0.0.0 (authorized security scanner)',
+          'user-agent': 'Sentinel/0.1.0 (authorized security scanner)',
           accept: '*/*',
           connection: 'close',
         },
