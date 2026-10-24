@@ -1,6 +1,7 @@
 import { resolveTarget, type ResolveResult } from '@sentinel/core';
 import { checkPort } from './connect.js';
 import { DEFAULT_PORTS } from './ports.js';
+import { ALLOWED_PORTS } from './ports.js';
 import type { PortResult, TcpResult } from './types.js';
 
 export interface TcpScanOptions {
@@ -16,7 +17,7 @@ export interface TcpScanOptions {
 
 export type TcpScanOutcome =
   | { ok: true; result: TcpResult }
-  | { ok: false; error: { code: 'BLOCKED_TARGET'; message: string } };
+  | { ok: false; error: { code: 'BLOCKED_TARGET' | 'PORT_NOT_ALLOWED'; message: string } };
 
 export async function scanPorts(
   host: string,
@@ -30,6 +31,14 @@ export async function scanPorts(
     resolve = resolveTarget,
     check = checkPort,
   } = options;
+
+  const disallowed = ports.filter((port) => !ALLOWED_PORTS.has(port));
+  if (disallowed.length > 0) {
+    return {
+      ok: false,
+      error: { code: 'PORT_NOT_ALLOWED', message: `port(s) not allowed: ${disallowed.join(', ')}` },
+    };
+  }
 
   const target = await resolve(host, { allowPrivate });
   const ip = target.allowed ? target.ips[0] : undefined;

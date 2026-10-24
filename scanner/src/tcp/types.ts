@@ -14,3 +14,8 @@ export interface TcpResult {
   ip: string;
   ports: PortResult[];
 }
+
+export interface PortNotAllowedError {
+  code: 'PORT_NOT_ALLOWED';
+  message: string;
+}

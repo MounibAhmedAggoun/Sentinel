@@ -51,9 +51,14 @@ describe('checkPort against a local server', () => {
 describe('scanPorts against a local server', () => {
   it('scans real ports when allowPrivate is on', async () => {
     const outcome = await scanPorts('127.0.0.1', {
-      ports: [openPort, closedPort],
+      ports: [80, 443],
       allowPrivate: true,
-      timeoutMs: 2000,
+      timeoutMs: 500,
+      check: (ip, port, timeoutMs) =>
+        checkPort(ip, port === 80 ? openPort : closedPort, timeoutMs).then((result) => ({
+          ...result,
+          port,
+        })),
     });
 
     expect(outcome.ok).toBe(true);

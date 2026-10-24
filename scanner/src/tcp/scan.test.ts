@@ -82,4 +82,31 @@ describe('scanPorts', () => {
       'closed',
     ]);
   });
+
+  it('rejects a port that is not on the allowlist, without resolving the target', async () => {
+    const resolve = vi.fn();
+    const check = vi.fn();
+
+    const outcome = await scanPorts('example.com', { ports: [9999], resolve, check });
+
+    expect(outcome).toEqual({
+      ok: false,
+      error: { code: 'PORT_NOT_ALLOWED', message: 'port(s) not allowed: 9999' },
+    });
+    expect(resolve).not.toHaveBeenCalled();
+    expect(check).not.toHaveBeenCalled();
+  });
+
+  it('rejects the whole scan if any one requested port is not allowed', async () => {
+    const check = vi.fn((_ip: string, port: number) => open(port));
+
+    const outcome = await scanPorts('example.com', {
+      ports: [80, 9999],
+      resolve: allow,
+      check,
+    });
+
+    expect(outcome.ok).toBe(false);
+    expect(check).not.toHaveBeenCalled();
+  });
 });
