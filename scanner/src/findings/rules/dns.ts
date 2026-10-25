@@ -52,7 +52,7 @@ export const dnsRules: Rule = (scan) => {
         ruleId: RULE_IDS.DNS_DMARC_MISSING,
         title: 'DMARC record not observed',
         severity: 'low',
-        description: `No DMARC record was observed at _dmarc.${dns.hostname}. DMARC tells receivers what to do with mail that fails SPF or DKIM checks, and gives the domain owner reports about it.`,
+        description: `No DMARC record was observed at _dmarc.${dns.hostname}, or at the organizational domain's DMARC record. DMARC tells receivers what to do with mail that fails SPF or DKIM checks, and gives the domain owner reports about it.`,
         evidence: { name: `_dmarc.${dns.hostname}`, present: false },
         remediation:
           'Consider publishing a DMARC record, starting with p=none to collect reports before moving to quarantine or reject.',
@@ -74,7 +74,7 @@ export const dnsRules: Rule = (scan) => {
       ruleId: RULE_IDS.DNS_CAA_MISSING,
       title: 'CAA record not observed',
       severity: 'informational',
-      description: `No CAA record was observed for ${dns.hostname}. CAA records restrict which certificate authorities may issue certificates for a domain.`,
+      description: `No CAA record was observed for ${dns.hostname} or any of its parent domains. CAA records restrict which certificate authorities may issue certificates for a domain.`,
       evidence: { hostname: dns.hostname, present: false },
       remediation: 'Consider adding a CAA record naming the certificate authorities you use.',
     });

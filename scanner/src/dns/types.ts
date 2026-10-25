@@ -38,7 +38,9 @@ export interface DnsResult {
   ns: DnsLookup<string>;
   txt: DnsLookup<string>;
   caa: DnsLookup<CaaRecord>;
+  caaFoundAt: string | null;
   dmarcTxt: DnsLookup<string>;
+  dmarcFoundAt: string | null;
   spf: SpfRecord | null;
   dmarc: DmarcRecord | null;
 }

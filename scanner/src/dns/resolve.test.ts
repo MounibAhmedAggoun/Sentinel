@@ -98,4 +98,86 @@ describe('resolveDns', () => {
       records: [{ critical: true, tag: 'iodef', value: 'mailto:sec@example.com' }],
     });
   });
+
+  it('falls back to the organizational domain for DMARC when the subdomain has none', async () => {
+    const resolveTxt = vi.fn((name: string) => {
+      if (name === '_dmarc.www.example.com') return Promise.reject(codeError('ENODATA'));
+      if (name === '_dmarc.example.com') return Promise.resolve([['v=DMARC1; p=reject']]);
+      return Promise.resolve([['hello']]);
+    });
+    const resolver = fakeResolver({ resolveTxt });
+
+    const result = await resolveDns('www.example.com', resolver);
+
+    expect(result.dmarc?.policy).toBe('reject');
+    expect(result.dmarcFoundAt).toBe('example.com');
+  });
+
+  it('does not report DMARC missing when it exists only at the organizational domain', async () => {
+    const resolveTxt = vi.fn((name: string) => {
+      if (name === '_dmarc.www.example.com') return Promise.reject(codeError('ENODATA'));
+      if (name === '_dmarc.example.com') return Promise.resolve([['v=DMARC1; p=none']]);
+      return Promise.reject(codeError('ENODATA'));
+    });
+    const resolver = fakeResolver({ resolveTxt });
+
+    const result = await resolveDns('www.example.com', resolver);
+
+    expect(result.dmarc).not.toBeNull();
+    expect(result.dmarcTxt.ok).toBe(true);
+  });
+
+  it('reports DMARC absent when no ancestor has a record', async () => {
+    const resolver = fakeResolver({
+      resolveTxt: vi.fn(() => Promise.reject(codeError('ENODATA'))),
+    });
+
+    const result = await resolveDns('www.example.com', resolver);
+
+    expect(result.dmarc).toBeNull();
+    expect(result.dmarcFoundAt).toBeNull();
+    expect(result.dmarcTxt).toEqual({ ok: true, records: [] });
+  });
+
+  it('stops the DMARC walk on a real lookup error instead of guessing', async () => {
+    const resolveTxt = vi.fn((name: string) => {
+      if (name === '_dmarc.www.example.com') return Promise.reject(codeError('ETIMEOUT'));
+      return Promise.resolve([['v=DMARC1; p=reject']]);
+    });
+    const resolver = fakeResolver({ resolveTxt });
+
+    const result = await resolveDns('www.example.com', resolver);
+
+    expect(result.dmarcTxt).toEqual({ ok: false, error: { code: 'TIMEOUT', message: 'ETIMEOUT' } });
+    expect(result.dmarc).toBeNull();
+  });
+
+  it('walks up the tree for CAA and records where it was found', async () => {
+    const resolveCaa = vi.fn((name: string) => {
+      if (name === 'www.example.com') return Promise.reject(codeError('ENODATA'));
+      if (name === 'example.com')
+        return Promise.resolve([{ critical: 0, issue: 'letsencrypt.org' }]);
+      return Promise.reject(codeError('ENODATA'));
+    });
+    const resolver = fakeResolver({ resolveCaa });
+
+    const result = await resolveDns('www.example.com', resolver);
+
+    expect(result.caa).toEqual({
+      ok: true,
+      records: [{ critical: false, tag: 'issue', value: 'letsencrypt.org' }],
+    });
+    expect(result.caaFoundAt).toBe('example.com');
+  });
+
+  it('reports CAA absent when no ancestor has a record set', async () => {
+    const resolver = fakeResolver({
+      resolveCaa: vi.fn(() => Promise.reject(codeError('ENODATA'))),
+    });
+
+    const result = await resolveDns('a.b.example.com', resolver);
+
+    expect(result.caa).toEqual({ ok: true, records: [] });
+    expect(result.caaFoundAt).toBeNull();
+  });
 });

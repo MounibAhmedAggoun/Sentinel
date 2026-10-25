@@ -6,6 +6,7 @@
   "main": "src/index.ts",
   "dependencies": {
     "@sentinel/core": "*",
+    "tldts": "^7.4.19",
     "zod": "^4.6.5"
   }
 }
