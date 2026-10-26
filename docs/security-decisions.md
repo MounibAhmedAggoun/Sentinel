@@ -170,3 +170,27 @@ A running log. Add an entry whenever a security-relevant choice is made.
 - **Known gaps:** Other headers (for example `Authorization` echoed back by a
   misconfigured server) are not redacted. Report files are not encrypted at
   rest.
+
+## Legacy TLS protocol detection (F-06)
+
+- **Decision:** After the main TLS connection succeeds, an optional probe
+  (`--probe-legacy-tls`) makes a few extra handshakes, each pinned to exactly
+  one protocol version (TLSv1, TLSv1.1, TLSv1.3), to see which ones a server
+  still accepts. This is off by default since it adds real network activity
+  and scan time beyond what a normal scan needs.
+- **Why:** Node 24's default minimum TLS version is 1.2, so a server that
+  only speaks TLS 1.0/1.1 fails the ordinary handshake entirely and looked
+  like `CONNECTION_FAILED` - indistinguishable from an unreachable host. The
+  probe turns that into a real, explained finding.
+- **OpenSSL security level:** Modern OpenSSL refuses TLS 1.0/1.1 handshakes
+  at its default security level, regardless of what the server supports.
+  The probe sets `ciphers: 'DEFAULT@SECLEVEL=0'` only for those two legacy
+  probes, so this scanning machine's own OpenSSL build doesn't become the
+  limiting factor.
+- **Known caveat:** On some systems, OpenSSL may be compiled without legacy
+  protocol support at all, even with `SECLEVEL=0`. In that case the probe
+  would report a legacy version as "not accepted" when the real answer is
+  "could not test from this machine." This was verified to work correctly
+  on the development machine (Arch Linux), but is not guaranteed on every
+  deployment target. A future version could detect and report this
+  distinction explicitly.
