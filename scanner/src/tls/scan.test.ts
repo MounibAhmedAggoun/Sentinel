@@ -24,7 +24,13 @@ const okOutcome: TlsOutcome = {
       serialNumber: '01',
       fingerprint256: 'AA:BB',
     },
-    analysis: { expired: false, daysUntilExpiry: 90, selfSigned: false, hostnameMatches: true },
+    analysis: {
+      expired: false,
+      daysUntilExpiry: 90,
+      selfSigned: false,
+      hostnameMatches: true,
+      trust: { authorized: true, error: null },
+    },
   },
 };
 

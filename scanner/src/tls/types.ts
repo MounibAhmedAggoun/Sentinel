@@ -23,13 +23,21 @@ export interface CertificateInfo {
   fingerprint256: string;
 }
 
-/** What we computed ourselves, because the connection does not verify certificates. */
 export interface TlsAnalysis {
   expired: boolean;
   /** Whole days until expiry. Negative when already expired. */
   daysUntilExpiry: number;
   selfSigned: boolean;
   hostnameMatches: boolean;
+  /**
+   * The verdict Node's own TLS stack reaches when it checks this certificate
+   * against the system's trusted root store, independent of our own heuristics.
+   */
+  trust: {
+    authorized: boolean;
+    /** OpenSSL-style code (e.g. "CERT_HAS_EXPIRED", "DEPTH_ZERO_SELF_SIGNED_CERT"). Null when authorized. */
+    error: string | null;
+  };
 }
 
 export interface TlsResult {

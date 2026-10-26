@@ -9,11 +9,16 @@ export interface AnalysisInput {
   hostname: string;
   /** ISO 8601 timestamp. */
   validTo: string;
-  /** Full subject and issuer strings. A self-signed certificate has the same value for both. */
-  subjectRaw: string;
-  issuerRaw: string;
+  /**
+   * Whether the certificate is self-signed, determined cryptographically
+   * (subject equals issuer AND the certificate verifies against its own
+   * public key) rather than by comparing subject/issuer strings alone.
+   */
+  selfSigned: boolean;
   commonName: string | null;
   san: string[];
+  /** The verdict Node's TLS stack reached against the system trust store. */
+  trust: { authorized: boolean; error: string | null };
 }
 
 function matchesHostname(input: AnalysisInput): boolean {
@@ -40,7 +45,8 @@ export function analyzeCertificate(input: AnalysisInput, now: Date = new Date())
   return {
     expired: invalidDate || validTo < now.getTime(),
     daysUntilExpiry: invalidDate ? 0 : Math.floor((validTo - now.getTime()) / DAY_MS),
-    selfSigned: input.subjectRaw !== '' && input.subjectRaw === input.issuerRaw,
+    selfSigned: input.selfSigned,
     hostnameMatches: matchesHostname(input),
+    trust: input.trust,
   };
 }

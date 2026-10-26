@@ -78,5 +78,26 @@ export const tlsRules: Rule = (scan) => {
     });
   }
 
+  // Only reported when the certificate isn't already flagged above for a more
+  // specific reason (expired, self-signed, hostname mismatch), since the
+  // system trust store would reject it for those same reasons too - this
+  // avoids three findings that all restate one underlying problem.
+  const alreadyExplained = analysis.expired || analysis.selfSigned || !analysis.hostnameMatches;
+  if (!analysis.trust.authorized && !alreadyExplained) {
+    findings.push({
+      ruleId: RULE_IDS.TLS_CERT_NOT_TRUSTED,
+      title: 'Certificate not trusted by the system certificate store',
+      severity: 'medium',
+      description: `The certificate served by ${scan.target} was not verified against this system's trusted root certificates. Reason reported by the TLS library: ${analysis.trust.error ?? 'unknown'}. This commonly means an incomplete certificate chain (a missing intermediate certificate), or an unrecognized certificate authority.`,
+      evidence: {
+        subject: certificate.subject.commonName,
+        issuer: certificate.issuer.commonName,
+        reason: analysis.trust.error,
+      },
+      remediation:
+        'Check that the server sends its full certificate chain, including any intermediate certificates, not just the leaf certificate.',
+    });
+  }
+
   return findings;
 };

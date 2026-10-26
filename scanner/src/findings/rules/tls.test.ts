@@ -10,6 +10,7 @@ function withAnalysis(
     daysUntilExpiry: number;
     selfSigned: boolean;
     hostnameMatches: boolean;
+    trust: { authorized: boolean; error: string | null };
   }>,
 ): ScanResult {
   const base = makeScan();
@@ -123,5 +124,48 @@ describe('tlsRules', () => {
     };
 
     expect(tlsRules(scan)).toEqual([]);
+  });
+
+  it('reports an untrusted certificate when nothing else explains it', () => {
+    const findings = tlsRules(
+      withAnalysis({ trust: { authorized: false, error: 'UNABLE_TO_GET_ISSUER_CERT_LOCALLY' } }),
+    );
+
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({
+      ruleId: RULE_IDS.TLS_CERT_NOT_TRUSTED,
+      severity: 'medium',
+      evidence: { reason: 'UNABLE_TO_GET_ISSUER_CERT_LOCALLY' },
+    });
+    expect(findings[0]?.remediation).not.toBe('');
+  });
+
+  it('does not report "not trusted" separately when the certificate is already self-signed', () => {
+    const findings = tlsRules(
+      withAnalysis({
+        selfSigned: true,
+        trust: { authorized: false, error: 'DEPTH_ZERO_SELF_SIGNED_CERT' },
+      }),
+    );
+
+    expect(findings.map((f) => f.ruleId)).toEqual([RULE_IDS.TLS_CERT_SELF_SIGNED]);
+  });
+
+  it('does not report "not trusted" separately when the certificate is already expired', () => {
+    const findings = tlsRules(
+      withAnalysis({
+        expired: true,
+        daysUntilExpiry: -5,
+        trust: { authorized: false, error: 'CERT_HAS_EXPIRED' },
+      }),
+    );
+
+    expect(findings.map((f) => f.ruleId)).toEqual([RULE_IDS.TLS_CERT_EXPIRED]);
+  });
+
+  it('does not report "not trusted" when the certificate is authorized', () => {
+    const findings = tlsRules(withAnalysis({ trust: { authorized: true, error: null } }));
+
+    expect(findings).toEqual([]);
   });
 });

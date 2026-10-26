@@ -7,10 +7,10 @@ function input(overrides: Partial<AnalysisInput> = {}): AnalysisInput {
   return {
     hostname: 'example.com',
     validTo: '2027-01-01T00:00:00.000Z',
-    subjectRaw: 'CN=example.com',
-    issuerRaw: 'CN=Some CA',
+    selfSigned: false,
     commonName: 'example.com',
     san: ['example.com', 'www.example.com'],
+    trust: { authorized: true, error: null },
     ...overrides,
   };
 }
@@ -44,23 +44,33 @@ describe('analyzeCertificate: expiry', () => {
 });
 
 describe('analyzeCertificate: self-signed', () => {
-  it('detects subject equal to issuer', () => {
+  // The actual cryptographic self-signed check (X509Certificate.verify) lives
+  // in connect.ts, since only it has the raw certificate bytes. These tests
+  // only confirm analyzeCertificate passes that pre-computed value through
+  // unchanged, rather than re-deriving it from strings.
+  it('passes through a true value', () => {
+    expect(analyzeCertificate(input({ selfSigned: true }), NOW).selfSigned).toBe(true);
+  });
+
+  it('passes through a false value', () => {
+    expect(analyzeCertificate(input({ selfSigned: false }), NOW).selfSigned).toBe(false);
+  });
+});
+
+describe('analyzeCertificate: trust', () => {
+  it('passes through an authorized verdict', () => {
+    const result = analyzeCertificate(input({ trust: { authorized: true, error: null } }), NOW);
+
+    expect(result.trust).toEqual({ authorized: true, error: null });
+  });
+
+  it('passes through an unauthorized verdict with its reason', () => {
     const result = analyzeCertificate(
-      input({ subjectRaw: 'CN=example.com', issuerRaw: 'CN=example.com' }),
+      input({ trust: { authorized: false, error: 'CERT_HAS_EXPIRED' } }),
       NOW,
     );
 
-    expect(result.selfSigned).toBe(true);
-  });
-
-  it('is false when issued by a different authority', () => {
-    expect(analyzeCertificate(input(), NOW).selfSigned).toBe(false);
-  });
-
-  it('is false when the subject is empty', () => {
-    const result = analyzeCertificate(input({ subjectRaw: '', issuerRaw: '' }), NOW);
-
-    expect(result.selfSigned).toBe(false);
+    expect(result.trust).toEqual({ authorized: false, error: 'CERT_HAS_EXPIRED' });
   });
 });
 

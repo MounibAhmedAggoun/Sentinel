@@ -37,7 +37,13 @@ function badScan(): ScanResult {
       ok: true,
       result: {
         ...base.tls.result,
-        analysis: { expired: true, daysUntilExpiry: -3, selfSigned: true, hostnameMatches: false },
+        analysis: {
+          expired: true,
+          daysUntilExpiry: -3,
+          selfSigned: true,
+          hostnameMatches: false,
+          trust: { authorized: false, error: 'DEPTH_ZERO_SELF_SIGNED_CERT' },
+        },
       },
     },
     dns: {

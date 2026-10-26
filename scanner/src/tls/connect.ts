@@ -1,3 +1,4 @@
+import { X509Certificate } from 'node:crypto';
 import { isIP } from 'node:net';
 import tls from 'node:tls';
 import { analyzeCertificate } from './analyze.js';
@@ -21,9 +22,14 @@ function toCertName(name: tls.Certificate | undefined): CertName {
   return { commonName: first(name?.CN), organization: first(name?.O) };
 }
 
-function rawName(name: tls.Certificate | undefined): string {
-  if (!name || Object.keys(name).length === 0) return '';
-  return JSON.stringify(Object.entries(name).sort());
+function checkSelfSigned(raw: Buffer | undefined): boolean {
+  if (raw === undefined) return false;
+  try {
+    const x509 = new X509Certificate(raw);
+    return x509.subject === x509.issuer && x509.verify(x509.publicKey);
+  } catch {
+    return false;
+  }
 }
 
 function toIso(value: string | undefined): string {
@@ -86,6 +92,11 @@ export function connectTls(options: TlsConnectOptions): Promise<TlsOutcome> {
         return;
       }
 
+      const trust = {
+        authorized: socket.authorized,
+        error: socket.authorized ? null : (socket.authorizationError?.message ?? 'unknown'),
+      };
+
       const san = parseSan(cert.subjectaltname);
       const validTo = toIso(cert.valid_to);
 
@@ -107,10 +118,10 @@ export function connectTls(options: TlsConnectOptions): Promise<TlsOutcome> {
           analysis: analyzeCertificate({
             hostname,
             validTo,
-            subjectRaw: rawName(cert.subject),
-            issuerRaw: rawName(cert.issuer),
+            selfSigned: checkSelfSigned(cert.raw),
             commonName: first(cert.subject?.CN),
             san,
+            trust,
           }),
         },
       });
