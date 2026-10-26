@@ -6,6 +6,8 @@ export interface TlsScanOptions {
   port?: number;
   allowPrivate?: boolean;
   timeoutMs?: number;
+  /** Also probe for legacy (TLSv1/1.1) and TLSv1.3 support. Off by default. */
+  probeLegacy?: boolean;
   /** Injectable for tests. Defaults to net-guard's resolveTarget. */
   resolve?: (host: string, options: { allowPrivate: boolean }) => Promise<ResolveResult>;
   /** Injectable for tests. Defaults to a real TLS connection. */
@@ -28,5 +30,11 @@ export async function scanTls(host: string, options: TlsScanOptions = {}): Promi
     return { ok: false, error: { code: 'BLOCKED_TARGET', message } };
   }
 
-  return connect({ hostname: host, ip, port, timeoutMs });
+  return connect({
+    hostname: host,
+    ip,
+    port,
+    timeoutMs,
+    ...(options.probeLegacy !== undefined ? { probeLegacy: options.probeLegacy } : {}),
+  });
 }

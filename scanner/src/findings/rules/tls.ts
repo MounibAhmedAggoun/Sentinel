@@ -99,5 +99,30 @@ export const tlsRules: Rule = (scan) => {
     });
   }
 
+  const legacy = scan.tls.result.legacyProtocols;
+  if (legacy !== null) {
+    if (legacy.acceptedLegacyVersions.length > 0) {
+      findings.push({
+        ruleId: RULE_IDS.TLS_LEGACY_PROTOCOL_ACCEPTED,
+        title: 'Outdated TLS protocol version accepted',
+        severity: 'medium',
+        description: `${scan.target} accepted a handshake using ${legacy.acceptedLegacyVersions.join(' and ')}, which modern browsers and clients no longer support by default. These versions have known weaknesses.`,
+        evidence: { acceptedVersions: legacy.acceptedLegacyVersions },
+        remediation: 'Disable TLS 1.0 and TLS 1.1 on the server, keeping TLS 1.2 and TLS 1.3 only.',
+      });
+    }
+
+    if (legacy.missingTls13) {
+      findings.push({
+        ruleId: RULE_IDS.TLS_1_3_NOT_SUPPORTED,
+        title: 'TLS 1.3 not observed as supported',
+        severity: 'informational',
+        description: `${scan.target} did not accept a handshake pinned to TLS 1.3, the current version with the best security and performance properties. Many servers still run only TLS 1.2, which remains secure.`,
+        evidence: { missingTls13: true },
+        remediation: 'Consider enabling TLS 1.3 if the server software supports it.',
+      });
+    }
+  }
+
   return findings;
 };

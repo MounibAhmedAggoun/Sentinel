@@ -75,6 +75,7 @@ export function makeScan(overrides: Partial<ScanResult> = {}): ScanResult {
         ip: '93.184.216.34',
         protocol: 'TLSv1.3',
         cipher: 'TLS_AES_256_GCM_SHA384',
+        legacyProtocols: null,
         certificate: {
           subject: { commonName: 'example.com', organization: null },
           issuer: { commonName: 'Some CA', organization: 'Some Org' },

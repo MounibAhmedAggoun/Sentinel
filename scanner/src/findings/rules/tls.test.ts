@@ -168,4 +168,76 @@ describe('tlsRules', () => {
 
     expect(findings).toEqual([]);
   });
+
+  it('produces nothing for legacy protocols when the probe did not run', () => {
+    const findings = tlsRules(makeScan());
+
+    expect(findings.map((f) => f.ruleId)).not.toContain(RULE_IDS.TLS_LEGACY_PROTOCOL_ACCEPTED);
+    expect(findings.map((f) => f.ruleId)).not.toContain(RULE_IDS.TLS_1_3_NOT_SUPPORTED);
+  });
+
+  it('reports accepted legacy protocol versions', () => {
+    const base = makeScan();
+    if (!base.tls.ok) throw new Error('fixture TLS should be ok');
+    const scan = {
+      ...base,
+      tls: {
+        ok: true as const,
+        result: {
+          ...base.tls.result,
+          legacyProtocols: {
+            acceptedLegacyVersions: ['TLSv1.1'] as ('TLSv1' | 'TLSv1.1')[],
+            missingTls13: false,
+          },
+        },
+      },
+    };
+
+    const findings = tlsRules(scan);
+
+    expect(findings.map((f) => f.ruleId)).toContain(RULE_IDS.TLS_LEGACY_PROTOCOL_ACCEPTED);
+    const finding = findings.find((f) => f.ruleId === RULE_IDS.TLS_LEGACY_PROTOCOL_ACCEPTED);
+    expect(finding?.severity).toBe('medium');
+    expect(finding?.evidence).toEqual({ acceptedVersions: ['TLSv1.1'] });
+  });
+
+  it('reports missing TLS 1.3 support as informational', () => {
+    const base = makeScan();
+    if (!base.tls.ok) throw new Error('fixture TLS should be ok');
+    const scan = {
+      ...base,
+      tls: {
+        ok: true as const,
+        result: {
+          ...base.tls.result,
+          legacyProtocols: { acceptedLegacyVersions: [], missingTls13: true },
+        },
+      },
+    };
+
+    const findings = tlsRules(scan);
+
+    const finding = findings.find((f) => f.ruleId === RULE_IDS.TLS_1_3_NOT_SUPPORTED);
+    expect(finding?.severity).toBe('informational');
+  });
+
+  it('produces nothing for legacy protocols when none are accepted and TLS 1.3 is supported', () => {
+    const base = makeScan();
+    if (!base.tls.ok) throw new Error('fixture TLS should be ok');
+    const scan = {
+      ...base,
+      tls: {
+        ok: true as const,
+        result: {
+          ...base.tls.result,
+          legacyProtocols: { acceptedLegacyVersions: [], missingTls13: false },
+        },
+      },
+    };
+
+    const findings = tlsRules(scan);
+
+    expect(findings.map((f) => f.ruleId)).not.toContain(RULE_IDS.TLS_LEGACY_PROTOCOL_ACCEPTED);
+    expect(findings.map((f) => f.ruleId)).not.toContain(RULE_IDS.TLS_1_3_NOT_SUPPORTED);
+  });
 });

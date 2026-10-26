@@ -35,10 +35,20 @@ program
   .option('--ports <list>', 'comma-separated ports to check, e.g. 80,443')
   .option('--json <file>', 'also write the full report to this JSON file')
   .option('--allow-private', 'allow private/internal addresses (local testing only)', false)
+  .option(
+    '--probe-legacy-tls',
+    'also probe for outdated TLS versions (a few extra handshakes)',
+    false,
+  )
   .action(
     async (
       rawTarget: string,
-      options: { ports?: string; json?: string; allowPrivate: boolean },
+      options: {
+        ports?: string;
+        json?: string;
+        allowPrivate: boolean;
+        probeLegacyTls: boolean;
+      },
     ) => {
       try {
         const parsed = targetSchema.safeParse(rawTarget);
@@ -77,7 +87,7 @@ program
         const http = await fetchHttp(`https://${target}/`, { allowPrivate });
         const httpPlain = await fetchHttp(`http://${target}/`, { allowPrivate });
         const tcp = await scanPorts(target, { ports, allowPrivate });
-        const tls = await scanTls(target, { allowPrivate });
+        const tls = await scanTls(target, { allowPrivate, probeLegacy: options.probeLegacyTls });
 
         const scan = { target, dns, http, httpPlain, tcp, tls };
         const findings = evaluate(scan);

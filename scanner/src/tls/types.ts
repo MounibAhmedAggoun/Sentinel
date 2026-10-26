@@ -48,6 +48,15 @@ export interface TlsResult {
   cipher: string | null;
   certificate: CertificateInfo;
   analysis: TlsAnalysis;
+  /** Null when the legacy-protocol probe was not run for this scan. */
+  legacyProtocols: LegacyProtocolProbe | null;
 }
 
 export type TlsOutcome = { ok: true; result: TlsResult } | { ok: false; error: TlsError };
+
+export interface LegacyProtocolProbe {
+  /** Protocol versions this server accepted when asked for exactly that version. */
+  acceptedLegacyVersions: ('TLSv1' | 'TLSv1.1')[];
+  /** True if the server did NOT accept a TLSv1.3 handshake when asked for exactly that version. */
+  missingTls13: boolean;
+}

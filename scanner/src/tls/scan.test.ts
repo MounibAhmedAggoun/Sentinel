@@ -15,6 +15,7 @@ const okOutcome: TlsOutcome = {
     ip: PUBLIC_IP,
     protocol: 'TLSv1.3',
     cipher: 'TLS_AES_256_GCM_SHA384',
+    legacyProtocols: null,
     certificate: {
       subject: { commonName: 'example.com', organization: null },
       issuer: { commonName: 'Some CA', organization: 'Some Org' },
