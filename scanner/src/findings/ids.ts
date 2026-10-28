@@ -28,6 +28,7 @@ export const RULE_IDS = {
   DNS_DMARC_MONITORING_ONLY: 'DNS-005',
 
   TCP_PORT_OPEN: 'TCP-001',
+  TCP_SENSITIVE_PORT_OPEN: 'TCP-002',
 } as const;
 
 export type RuleId = (typeof RULE_IDS)[keyof typeof RULE_IDS];

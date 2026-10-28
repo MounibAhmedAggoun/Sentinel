@@ -5,6 +5,7 @@ exports[`evaluate > matches a snapshot of rule IDs and severities for a bad scan
   "high TLS-001",
   "medium TLS-003",
   "medium TLS-004",
+  "medium TCP-002",
   "low HTTP-001",
   "low HTTP-002",
   "low HTTP-003",
@@ -18,6 +19,5 @@ exports[`evaluate > matches a snapshot of rule IDs and severities for a bad scan
   "low DNS-002",
   "informational HTTP-006",
   "informational DNS-003",
-  "informational TCP-001",
 ]
 `;
