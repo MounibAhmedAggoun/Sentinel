@@ -12,27 +12,70 @@ export interface BuildReportInput {
 
 type ReportError = Report['errors'][number];
 
-/**
- * Set-Cookie values can be live session tokens, so reports keep only the
- * cookie name. The Secure/HttpOnly/SameSite flags are already stored
- * separately in each hop's "cookies" list.
- */
+const HEADER_ALLOWLIST = new Set([
+  'server',
+  'x-powered-by',
+  'via',
+  'content-type',
+  'cache-control',
+  'strict-transport-security',
+  'content-security-policy',
+  'x-frame-options',
+  'x-content-type-options',
+  'referrer-policy',
+  'permissions-policy',
+  'cross-origin-opener-policy',
+  'cross-origin-resource-policy',
+  'cross-origin-embedder-policy',
+  'location',
+  'alt-svc',
+]);
+
 function redactHeaders(
   headers: Record<string, string | string[]>,
 ): Record<string, string | string[]> {
-  const result: Record<string, string | string[]> = { ...headers };
-  const setCookie = result['set-cookie'];
-  if (setCookie !== undefined) {
-    const lines = Array.isArray(setCookie) ? setCookie : [setCookie];
-    result['set-cookie'] = lines.map((line) => `${line.split('=')[0]?.trim() ?? ''}=[redacted]`);
+  const result: Record<string, string | string[]> = {};
+  for (const [name, value] of Object.entries(headers)) {
+    if (!HEADER_ALLOWLIST.has(name.toLowerCase())) continue;
+    // The Location header's value is itself a URL, and can carry a secret
+    // in its query string (an OAuth callback token, a signed URL), so it
+    // needs the same redaction as the top-level URL fields.
+    if (name.toLowerCase() === 'location') {
+      result[name] = Array.isArray(value) ? value.map(redactUrl) : redactUrl(value);
+    } else {
+      result[name] = value;
+    }
   }
   return result;
+}
+
+/**
+ * Keeps the origin and path of a URL, but strips the query string. A query
+ * string can carry secrets (an OAuth callback token, a signed URL), while
+ * the scheme/host/path is what rules and readers actually need.
+ */
+function redactUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    const hasQuery = parsed.search !== '';
+    parsed.search = '';
+    return hasQuery ? `${parsed.toString()}?[redacted]` : parsed.toString();
+  } catch {
+    // Not a parseable absolute URL (shouldn't normally happen here); keep as is.
+    return url;
+  }
 }
 
 function redactHttp(result: HttpResult): HttpResult {
   return {
     ...result,
-    hops: result.hops.map((hop) => ({ ...hop, headers: redactHeaders(hop.headers) })),
+    startUrl: redactUrl(result.startUrl),
+    finalUrl: result.finalUrl === null ? null : redactUrl(result.finalUrl),
+    hops: result.hops.map((hop) => ({
+      ...hop,
+      url: redactUrl(hop.url),
+      headers: redactHeaders(hop.headers),
+    })),
   };
 }
 

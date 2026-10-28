@@ -94,12 +94,12 @@ describe('buildReport', () => {
     expect(build(scan).errors).toEqual([{ module: 'httpPlain', code: 'TIMEOUT', message: 'slow' }]);
   });
 
-  it('never puts cookie values in the report', () => {
+  it('never puts cookie values in the report, and drops the raw header entirely', () => {
     const scan = scanWithHeaders({ 'set-cookie': ['sid=SUPERSECRET123; Secure; HttpOnly'] });
     const text = JSON.stringify(build(scan));
 
     expect(text).not.toContain('SUPERSECRET123');
-    expect(text).toContain('sid=[redacted]');
+    expect(text).not.toContain('set-cookie');
   });
 
   it('redacts every cookie when there are several', () => {
@@ -123,6 +123,49 @@ describe('buildReport', () => {
 
   it('matches a snapshot', () => {
     expect(build(scanWithHeaders({ server: 'Apache/2.4.41' }))).toMatchSnapshot();
+  });
+
+  it('drops a header that is not on the allowlist, even if a server echoes a debug token in it', () => {
+    const scan = scanWithHeaders({ server: 'nginx', 'x-debug-token': 'abc-secret-123' });
+    const text = JSON.stringify(build(scan));
+
+    expect(text).not.toContain('abc-secret-123');
+    expect(text).not.toContain('x-debug-token');
+    expect(text).toContain('nginx');
+  });
+
+  it('strips the query string from a redirect Location header', () => {
+    const scan = scanWithHeaders({ location: 'https://example.com/cb?token=abc-secret-123' });
+    const text = JSON.stringify(build(scan));
+
+    expect(text).not.toContain('abc-secret-123');
+    expect(text).toContain('/cb?[redacted]');
+  });
+
+  it('strips the query string from the start and final URLs', () => {
+    const base = makeScan();
+    const scan = {
+      ...base,
+      http: {
+        ...base.http,
+        startUrl: 'https://example.com/?secret=abc123',
+        finalUrl: 'https://example.com/landing?token=xyz789',
+        hops: [{ ...base.http.hops[0]!, url: 'https://example.com/landing?token=xyz789' }],
+      },
+    };
+    const text = JSON.stringify(build(scan));
+
+    expect(text).not.toContain('abc123');
+    expect(text).not.toContain('xyz789');
+    expect(text).toContain('?[redacted]');
+  });
+
+  it('leaves a URL with no query string unchanged', () => {
+    const base = makeScan();
+    const text = JSON.stringify(build(base));
+
+    expect(text).toContain('"startUrl":"https://example.com/"');
+    expect(text).not.toContain('[redacted]');
   });
 });
 
