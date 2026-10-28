@@ -194,3 +194,21 @@ A running log. Add an entry whenever a security-relevant choice is made.
   on the development machine (Arch Linux), but is not guaranteed on every
   deployment target. A future version could detect and report this
   distinction explicitly.
+
+## Header allowlist and URL redaction (F-04)
+
+- **Decision:** Reports only keep response headers on an explicit allowlist
+  (server, x-powered-by, via, content-type, cache-control, the standard
+  security headers, location, alt-svc). Everything else is dropped entirely,
+  not just the ones known to be risky.
+- **Why:** A misconfigured server could echo back anything in a custom
+  header - a debug token, an internal value - and a denylist can only block
+  names someone thought of in advance. An allowlist can't leak what it
+  never collects.
+- **URLs are redacted too:** `startUrl`, `finalUrl`, each hop's `url`, and
+  the `Location` header's value (since it is itself a URL) all have their
+  query string replaced with `?[redacted]`. Query strings can carry secrets
+  - OAuth callback tokens, signed URLs - that the path and origin don't.
+- **Known gap:** The allowlist is fixed at the module level for now. A
+  future version could let it be extended per-scan, since some
+  deployments may want to allow additional headers for their own analysis.
