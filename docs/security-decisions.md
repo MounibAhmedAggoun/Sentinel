@@ -212,3 +212,28 @@ A running log. Add an entry whenever a security-relevant choice is made.
 - **Known gap:** The allowlist is fixed at the module level for now. A
   future version could let it be extended per-scan, since some
   deployments may want to allow additional headers for their own analysis.
+
+## Open-port severity table (F-09)
+
+- **Decision:** Most open ports stay informational, as before. A small table
+  of sensitive ports (Telnet, RDP, and common database/data-store ports -
+  MySQL, PostgreSQL, Redis, MongoDB) now get their own finding at low or
+  medium severity instead, since these are more commonly meant to stay on a
+  private network.
+- **Why:** An open port is never proof of a vulnerability, but some services
+  are reachable from the internet far less often than others by design, and
+  that distinction is worth surfacing more than a flat "informational" for
+  everything.
+- **Wording stays observational:** findings say the port "accepted a TCP
+  connection" and "is reachable from the scanning host", never that the
+  service is vulnerable, misconfigured, or has been accessed. SSH stays
+  informational despite also being an administrative port, since it is
+  commonly and intentionally internet-facing.
+- **Proof:** besides fixture-based unit tests for the severity table, a real
+  integration test opens a genuine local TCP listener and runs it through
+  the real `scanPorts` and `tcpRules` pipeline, confirming the finding is
+  produced by actual socket activity, not only hand-built test data.
+- **Known gap:** the table is a fixed, small list. A future version could
+  let a user mark specific ports as expected/accepted for their own
+  environment (an `expectedOpenPorts` setting), so a legitimately
+  internet-facing database doesn't need to be re-explained on every scan.
