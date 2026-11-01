@@ -82,6 +82,56 @@ export const headerRules: Rule = (scan) => {
     }
   }
 
+  // CSP observed but allowing weak script sources. Uses script-src, or default-src as the fallback.
+  const cspHeader = headerValue(hop, 'content-security-policy');
+  if (cspHeader !== null) {
+    const directives = new Map<string, string[]>();
+    for (const part of cspHeader.split(';')) {
+      const [name, ...tokens] = part.trim().split(/\s+/);
+      const key = name?.toLowerCase() ?? '';
+      // Per the CSP spec, the first occurrence of a duplicated directive wins.
+      if (key !== '' && !directives.has(key)) {
+        directives.set(key, tokens);
+      }
+    }
+
+    const directiveName = directives.has('script-src') ? 'script-src' : 'default-src';
+    const scriptSources = (directives.get(directiveName) ?? []).map((s) => s.toLowerCase());
+
+    // Browsers ignore 'unsafe-inline' when a nonce, hash, or 'strict-dynamic' is present.
+    const hasNonceOrHash = scriptSources.some(
+      (s) =>
+        s.startsWith("'nonce-") ||
+        s.startsWith("'sha256-") ||
+        s.startsWith("'sha384-") ||
+        s.startsWith("'sha512-") ||
+        s === "'strict-dynamic'",
+    );
+
+    const weak: string[] = [];
+    if (scriptSources.includes("'unsafe-inline'") && !hasNonceOrHash) weak.push("'unsafe-inline'");
+    if (scriptSources.includes("'unsafe-eval'")) weak.push("'unsafe-eval'");
+    if (scriptSources.includes('*')) weak.push('*');
+
+    if (weak.length > 0) {
+      findings.push({
+        ruleId: RULE_IDS.HTTP_CSP_WEAK,
+        title: 'Content-Security-Policy observed with weak script sources',
+        severity: 'low',
+        description: `The Content-Security-Policy header observed at ${hop.url} allows ${weak.join(', ')} in ${directiveName}, which weakens its protection against cross-site scripting.`,
+        evidence: {
+          header: 'Content-Security-Policy',
+          directive: directiveName,
+          weakSources: weak,
+          value: cspHeader,
+          url: hop.url,
+        },
+        remediation:
+          "Consider removing these sources from script-src, and using nonces or hashes instead of 'unsafe-inline'.",
+      });
+    }
+  }
+
   const contentTypeOptions = headerValue(hop, 'x-content-type-options');
   if (contentTypeOptions === null || contentTypeOptions.toLowerCase() !== 'nosniff') {
     findings.push({

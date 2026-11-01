@@ -144,6 +144,125 @@ describe('headerRules', () => {
     expect(ids({ ...scan, http })).not.toContain(RULE_IDS.HTTP_HSTS_WEAK);
   });
 
+  it("flags 'unsafe-inline' in script-src", () => {
+    const findings = headerRules(
+      scanWithHeaders({
+        ...CLEAN_HEADERS,
+        'content-security-policy': "script-src 'self' 'unsafe-inline'; frame-ancestors 'none'",
+      }),
+    );
+
+    expect(findings.map((f) => f.ruleId)).toEqual([RULE_IDS.HTTP_CSP_WEAK]);
+    expect(findings[0]?.evidence).toMatchObject({
+      directive: 'script-src',
+      weakSources: ["'unsafe-inline'"],
+    });
+  });
+
+  it("flags 'unsafe-eval' in script-src", () => {
+    expect(
+      ids(
+        scanWithHeaders({
+          ...CLEAN_HEADERS,
+          'content-security-policy': "script-src 'self' 'unsafe-eval'; frame-ancestors 'none'",
+        }),
+      ),
+    ).toEqual([RULE_IDS.HTTP_CSP_WEAK]);
+  });
+
+  it('flags a bare wildcard in script-src', () => {
+    expect(
+      ids(
+        scanWithHeaders({
+          ...CLEAN_HEADERS,
+          'content-security-policy': "script-src *; frame-ancestors 'none'",
+        }),
+      ),
+    ).toEqual([RULE_IDS.HTTP_CSP_WEAK]);
+  });
+
+  it('does not flag a wildcard subdomain', () => {
+    expect(
+      ids(
+        scanWithHeaders({
+          ...CLEAN_HEADERS,
+          'content-security-policy': "script-src *.example.com; frame-ancestors 'none'",
+        }),
+      ),
+    ).toEqual([]);
+  });
+
+  it('falls back to default-src when script-src is absent', () => {
+    const findings = headerRules(
+      scanWithHeaders({
+        ...CLEAN_HEADERS,
+        'content-security-policy': "default-src 'self' 'unsafe-inline'; frame-ancestors 'none'",
+      }),
+    );
+
+    expect(findings.map((f) => f.ruleId)).toEqual([RULE_IDS.HTTP_CSP_WEAK]);
+    expect(findings[0]?.evidence).toMatchObject({ directive: 'default-src' });
+  });
+
+  it('lets script-src override a weak default-src', () => {
+    expect(
+      ids(
+        scanWithHeaders({
+          ...CLEAN_HEADERS,
+          'content-security-policy': "default-src *; script-src 'self'; frame-ancestors 'none'",
+        }),
+      ),
+    ).toEqual([]);
+  });
+
+  it("does not flag 'unsafe-inline' outside script directives", () => {
+    expect(
+      ids(
+        scanWithHeaders({
+          ...CLEAN_HEADERS,
+          'content-security-policy':
+            "script-src 'self'; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'",
+        }),
+      ),
+    ).toEqual([]);
+  });
+
+  it("does not flag 'unsafe-inline' when a nonce is present", () => {
+    expect(
+      ids(
+        scanWithHeaders({
+          ...CLEAN_HEADERS,
+          'content-security-policy':
+            "script-src 'nonce-abc123' 'unsafe-inline'; frame-ancestors 'none'",
+        }),
+      ),
+    ).toEqual([]);
+  });
+
+  it("still flags 'unsafe-eval' when a nonce is present", () => {
+    expect(
+      ids(
+        scanWithHeaders({
+          ...CLEAN_HEADERS,
+          'content-security-policy':
+            "script-src 'nonce-abc123' 'unsafe-eval'; frame-ancestors 'none'",
+        }),
+      ),
+    ).toEqual([RULE_IDS.HTTP_CSP_WEAK]);
+  });
+
+  it('uses the first occurrence of a duplicated directive', () => {
+    expect(
+      ids(
+        scanWithHeaders({
+          ...CLEAN_HEADERS,
+          'content-security-policy':
+            "script-src 'self'; script-src 'unsafe-inline'; frame-ancestors 'none'",
+        }),
+      ),
+    ).toEqual([]);
+  });
+
   it('produces nothing when the HTTP check failed', () => {
     const scan = makeScan();
     const http = { ...scan.http, error: { code: 'TIMEOUT' as const, message: 'slow' } };
