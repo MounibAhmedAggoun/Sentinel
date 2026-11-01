@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
-import { resolveTarget } from '@sentinel/core';
+import { resolveTarget, type ResolveResult } from '@sentinel/core';
 import {
   buildReport,
   DEFAULT_PORTS,
@@ -83,11 +83,28 @@ program
         const allowPrivate = options.allowPrivate;
         const startedAt = new Date();
 
+        // Resolve once: every module reuses the IPs validated above.
+        // Other hosts (e.g. redirect targets) are still resolved and checked fresh.
+        const resolveOnce = (
+          host: string,
+          opts: { allowPrivate: boolean },
+        ): Promise<ResolveResult> =>
+          host.toLowerCase() === target.toLowerCase()
+            ? Promise.resolve(result)
+            : resolveTarget(host, opts);
+
         const dns = await resolveDns(target);
-        const http = await fetchHttp(`https://${target}/`, { allowPrivate });
-        const httpPlain = await fetchHttp(`http://${target}/`, { allowPrivate });
-        const tcp = await scanPorts(target, { ports, allowPrivate });
-        const tls = await scanTls(target, { allowPrivate, probeLegacy: options.probeLegacyTls });
+        const http = await fetchHttp(`https://${target}/`, { allowPrivate, resolve: resolveOnce });
+        const httpPlain = await fetchHttp(`http://${target}/`, {
+          allowPrivate,
+          resolve: resolveOnce,
+        });
+        const tcp = await scanPorts(target, { ports, allowPrivate, resolve: resolveOnce });
+        const tls = await scanTls(target, {
+          allowPrivate,
+          probeLegacy: options.probeLegacyTls,
+          resolve: resolveOnce,
+        });
 
         const scan = { target, dns, http, httpPlain, tcp, tls };
         const findings = evaluate(scan);
