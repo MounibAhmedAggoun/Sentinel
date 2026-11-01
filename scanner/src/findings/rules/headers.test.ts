@@ -93,6 +93,57 @@ describe('headerRules', () => {
     expect(findings[0]?.evidence).toMatchObject({ present: true, value: 'sniff' });
   });
 
+  it('flags HSTS with a max-age below 180 days', () => {
+    const findings = headerRules(
+      scanWithHeaders({ ...CLEAN_HEADERS, 'strict-transport-security': 'max-age=300' }),
+    );
+
+    expect(findings.map((f) => f.ruleId)).toEqual([RULE_IDS.HTTP_HSTS_WEAK]);
+    expect(findings[0]?.evidence).toMatchObject({ maxAgeSeconds: 300 });
+  });
+
+  it('flags HSTS with max-age=0', () => {
+    expect(
+      ids(scanWithHeaders({ ...CLEAN_HEADERS, 'strict-transport-security': 'max-age=0' })),
+    ).toEqual([RULE_IDS.HTTP_HSTS_WEAK]);
+  });
+
+  it('flags HSTS with no max-age value', () => {
+    const findings = headerRules(
+      scanWithHeaders({ ...CLEAN_HEADERS, 'strict-transport-security': 'includeSubDomains' }),
+    );
+
+    expect(findings.map((f) => f.ruleId)).toEqual([RULE_IDS.HTTP_HSTS_WEAK]);
+    expect(findings[0]?.evidence).toMatchObject({ maxAgeSeconds: null });
+  });
+
+  it('accepts HSTS at exactly 180 days', () => {
+    expect(
+      ids(
+        scanWithHeaders({
+          ...CLEAN_HEADERS,
+          'strict-transport-security': 'max-age=15552000; includeSubDomains',
+        }),
+      ),
+    ).toEqual([]);
+  });
+
+  it('accepts a quoted HSTS max-age', () => {
+    expect(
+      ids(scanWithHeaders({ ...CLEAN_HEADERS, 'strict-transport-security': 'max-age="31536000"' })),
+    ).toEqual([]);
+  });
+
+  it('does not judge HSTS strength on a plain HTTP response', () => {
+    const scan = scanWithHeaders({ ...CLEAN_HEADERS, 'strict-transport-security': 'max-age=0' });
+    const http = {
+      ...scan.http,
+      hops: [{ ...scan.http.hops[0]!, url: 'http://example.com/' }],
+    };
+
+    expect(ids({ ...scan, http })).not.toContain(RULE_IDS.HTTP_HSTS_WEAK);
+  });
+
   it('produces nothing when the HTTP check failed', () => {
     const scan = makeScan();
     const http = { ...scan.http, error: { code: 'TIMEOUT' as const, message: 'slow' } };

@@ -54,6 +54,34 @@ export const headerRules: Rule = (scan) => {
     );
   }
 
+  // HSTS observed but with a short, zero, or missing max-age (HTTPS responses only).
+  const hsts = isHttps ? headerValue(hop, 'strict-transport-security') : null;
+  if (hsts !== null) {
+    const minMaxAgeSeconds = 180 * 24 * 60 * 60;
+    const match = /(?:^|;)\s*max-age\s*=\s*"?(\d+)"?/i.exec(hsts);
+    const maxAge = match?.[1] !== undefined ? Number(match[1]) : null;
+    if (maxAge === null || maxAge < minMaxAgeSeconds) {
+      findings.push({
+        ruleId: RULE_IDS.HTTP_HSTS_WEAK,
+        title: 'Strict-Transport-Security observed with a short or missing max-age',
+        severity: 'low',
+        description:
+          maxAge === null
+            ? `The Strict-Transport-Security header was observed at ${hop.url} but no max-age value was found, so browsers may ignore it.`
+            : `The Strict-Transport-Security header was observed at ${hop.url} with a max-age of ${maxAge} seconds, which is below the 180 days (${minMaxAgeSeconds} seconds) commonly recommended.`,
+        evidence: {
+          header: 'Strict-Transport-Security',
+          value: hsts,
+          maxAgeSeconds: maxAge,
+          minimumSeconds: minMaxAgeSeconds,
+          url: hop.url,
+        },
+        remediation:
+          'Consider a max-age of at least 15552000 (180 days), and a longer value once the whole site is confirmed to work over HTTPS.',
+      });
+    }
+  }
+
   const contentTypeOptions = headerValue(hop, 'x-content-type-options');
   if (contentTypeOptions === null || contentTypeOptions.toLowerCase() !== 'nosniff') {
     findings.push({
