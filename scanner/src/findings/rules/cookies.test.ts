@@ -20,6 +20,41 @@ function scanWithHops(hops: Pick<HttpHop, 'url' | 'cookies'>[]): ScanResult {
 }
 
 describe('cookieRules', () => {
+  it('reports SameSite=None without Secure', () => {
+    const findings = cookieRules(
+      scanWithCookies([{ ...GOOD, secure: false, sameSite: 'none' }], 'http://example.com/'),
+    );
+
+    expect(findings.map((f) => f.ruleId)).toEqual([RULE_IDS.COOKIE_SAMESITE_NONE_WITHOUT_SECURE]);
+    expect(findings[0]?.evidence).toMatchObject({
+      sameSite: 'none',
+      secure: false,
+      cookies: ['sid'],
+    });
+    expect(findings[0]?.remediation).not.toBe('');
+  });
+
+  it('reports both rules for SameSite=None without Secure over HTTPS', () => {
+    const ruleIds = cookieRules(
+      scanWithCookies([{ ...GOOD, secure: false, sameSite: 'none' }]),
+    ).map((f) => f.ruleId);
+
+    expect(ruleIds).toContain(RULE_IDS.COOKIE_SECURE_MISSING);
+    expect(ruleIds).toContain(RULE_IDS.COOKIE_SAMESITE_NONE_WITHOUT_SECURE);
+  });
+
+  it('accepts SameSite=None with Secure', () => {
+    expect(cookieRules(scanWithCookies([{ ...GOOD, sameSite: 'none' }]))).toEqual([]);
+  });
+
+  it('does not flag SameSite=Lax without Secure as SameSite=None', () => {
+    const ruleIds = cookieRules(
+      scanWithCookies([{ ...GOOD, secure: false, sameSite: 'lax' }], 'http://example.com/'),
+    ).map((f) => f.ruleId);
+
+    expect(ruleIds).not.toContain(RULE_IDS.COOKIE_SAMESITE_NONE_WITHOUT_SECURE);
+  });
+
   it('produces nothing when there are no cookies', () => {
     expect(cookieRules(makeScan())).toEqual([]);
   });

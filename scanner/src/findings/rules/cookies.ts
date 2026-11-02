@@ -83,5 +83,21 @@ export const cookieRules: Rule = (scan) => {
     );
   }
 
+  // Browsers reject SameSite=None cookies that lack the Secure flag.
+  const noneWithoutSecure = cookies
+    .filter((c) => c.sameSite === 'none' && !c.secure)
+    .map((c) => c.name);
+  if (noneWithoutSecure.length > 0) {
+    findings.push({
+      ruleId: RULE_IDS.COOKIE_SAMESITE_NONE_WITHOUT_SECURE,
+      title: 'Cookie observed with SameSite=None but without Secure',
+      severity: 'low',
+      description: `${noneWithoutSecure.length} cookie(s) were set with SameSite=None but without the Secure flag. Browsers that enforce this rule reject such cookies, so they may not be stored at all.`,
+      evidence: { sameSite: 'none', secure: false, cookies: noneWithoutSecure },
+      remediation:
+        'Add the Secure flag to these cookies, or use SameSite=Lax or SameSite=Strict if they do not need to be sent cross-site.',
+    });
+  }
+
   return findings;
 };
