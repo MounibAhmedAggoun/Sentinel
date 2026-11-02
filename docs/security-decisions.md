@@ -237,3 +237,46 @@ A running log. Add an entry whenever a security-relevant choice is made.
   let a user mark specific ports as expected/accepted for their own
   environment (an `expectedOpenPorts` setting), so a legitimately
   internet-facing database doesn't need to be re-explained on every scan.
+
+## Resolve once, reuse everywhere (F-07)
+
+- **Decision:** The CLI resolves the target once through net-guard and passes
+  that validated result to the HTTP, TCP, and TLS modules. Before this, each
+  module resolved the name again on its own, so a host with several IPs could
+  be scanned at different addresses by different modules.
+- **Why:** One scan should describe one set of validated IPs. Fewer lookups
+  also means fewer chances for DNS answers to change mid-scan.
+- **Redirects:** The reuse applies only when the host is the scanned target.
+  A redirect to any other host is still resolved and checked by net-guard on
+  that hop, so the per-hop SSRF protection is unchanged.
+- **Alternatives considered:** Changing each module to take pre-resolved IPs.
+  Rejected because every module already accepts an injectable `resolve`
+  function, so the CLI can supply the stored result without changing module
+  code.
+- **Known gap:** Modules still use only the first resolved IP. Scanning every
+  IP of a multi-IP host is not done yet.
+
+## Rule quality depth (F-08)
+
+- **Decision:** Four rules now judge the quality of what was observed, not just
+  whether it was present. Each is a separate finding with its own stable ID:
+  - HSTS with a missing, zero, or short `max-age` (under 180 days).
+  - CSP with weak script sources: `'unsafe-inline'`, `'unsafe-eval'`, or a
+    bare `*` in `script-src` (or `default-src` when `script-src` is absent).
+  - SPF without an enforcing policy: ending in `?all`, or having no `all` and
+    no `redirect=`.
+  - Cookies with `SameSite=None` but without `Secure`.
+- **Why:** A weak header or record counts as present under a presence check,
+  which hides real configuration problems.
+- **CSP details:** The first occurrence of a duplicated directive wins, as in
+  the CSP spec. `'unsafe-inline'` is not flagged when a nonce, hash, or
+  `'strict-dynamic'` is present, since browsers ignore it then.
+  `'unsafe-eval'` is flagged either way.
+- **Wording stays observational:** Findings say what was observed and why it
+  may matter, never that the site is vulnerable. All four are low severity.
+- **Existing rules unchanged:** The "missing" rules and their IDs are
+  untouched. Weakness is reported as an additional finding.
+- **Known gaps:** The `__Host-` and `__Secure-` cookie prefix checks need the
+  cookie parser to record `Path` and `Domain`, which it does not yet. The SPF
+  10-DNS-lookup limit needs recursive `include:` resolution, which is
+  separate work.
