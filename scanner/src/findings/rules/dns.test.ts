@@ -47,8 +47,29 @@ describe('dnsRules: SPF', () => {
     expect(findings[0]?.severity).toBe('medium');
   });
 
-  it.each(['-all', '~all', '?all'] as const)('accepts an SPF record ending in %s', (all) => {
+  it.each(['-all', '~all'] as const)('accepts an SPF record ending in %s', (all) => {
     expect(dnsRules(withDns({ spf: { raw: `v=spf1 ${all}`, all } }))).toEqual([]);
+  });
+
+  it('flags an SPF record ending in ?all as not enforcing', () => {
+    const findings = dnsRules(withDns({ spf: { raw: 'v=spf1 ?all', all: '?all' } }));
+
+    expect(findings.map((f) => f.ruleId)).toEqual([RULE_IDS.DNS_SPF_NO_ENFORCEMENT]);
+    expect(findings[0]?.evidence).toMatchObject({ all: '?all', hasRedirect: false });
+  });
+
+  it('flags an SPF record with no all mechanism and no redirect', () => {
+    expect(
+      dnsRules(withDns({ spf: { raw: 'v=spf1 include:_spf.example.net', all: null } })).map(
+        (f) => f.ruleId,
+      ),
+    ).toEqual([RULE_IDS.DNS_SPF_NO_ENFORCEMENT]);
+  });
+
+  it('accepts an SPF record that uses redirect= instead of all', () => {
+    expect(
+      dnsRules(withDns({ spf: { raw: 'v=spf1 redirect=_spf.example.net', all: null } })),
+    ).toEqual([]);
   });
 });
 

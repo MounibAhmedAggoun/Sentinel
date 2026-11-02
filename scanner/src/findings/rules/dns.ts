@@ -45,6 +45,31 @@ export const dnsRules: Rule = (scan) => {
     });
   }
 
+  // SPF observed but not enforcing: ends in "?all", or has no "all" and no redirect.
+  if (dns.spf !== null) {
+    const hasRedirect = /(^|\s)redirect=/i.test(dns.spf.raw);
+    const neutral = dns.spf.all === '?all';
+    const noVerdict = dns.spf.all === null && !hasRedirect;
+    if (neutral || noVerdict) {
+      findings.push({
+        ruleId: RULE_IDS.DNS_SPF_NO_ENFORCEMENT,
+        title: 'SPF record observed without an enforcing policy',
+        severity: 'low',
+        description: neutral
+          ? `The SPF record for ${dns.hostname} ends in "?all", which tells receivers to treat every sender as neutral. Mail from unlisted servers is neither passed nor failed.`
+          : `The SPF record for ${dns.hostname} has no "all" mechanism and no redirect, so receivers get no verdict for servers that are not listed.`,
+        evidence: {
+          hostname: dns.hostname,
+          raw: dns.spf.raw.slice(0, 200),
+          all: dns.spf.all,
+          hasRedirect,
+        },
+        remediation:
+          'Review the SPF record and end it with "-all" or "~all", listing only the servers that should send email.',
+      });
+    }
+  }
+
   // DMARC lives at _dmarc.<hostname>.
   if (dns.dmarc === null) {
     if (answered(dns.dmarcTxt)) {
