@@ -45,57 +45,71 @@ export function requestOnce(
   options: { timeoutMs: number },
 ): Promise<RawResponse> {
   return new Promise((resolve, reject) => {
-    const started = performance.now();
-    const family = ip.includes(':') ? 6 : 4;
+    let timer: NodeJS.Timeout | undefined;
 
-    const pinnedLookup: LookupFunction = (_hostname, lookupOptions, callback) => {
-      if (lookupOptions.all) callback(null, [{ address: ip, family }]);
-      else callback(null, ip, family);
-    };
+    // Node can throw synchronously while building the request (for example on
+    // illegal characters in the path). Map that to a structured error too.
+    try {
+      const started = performance.now();
+      const family = ip.includes(':') ? 6 : 4;
 
-    const isHttps = url.protocol === 'https:';
-    const transport = isHttps ? https : http;
+      const pinnedLookup: LookupFunction = (_hostname, lookupOptions, callback) => {
+        if (lookupOptions.all) callback(null, [{ address: ip, family }]);
+        else callback(null, ip, family);
+      };
 
-    const req = transport.request(
-      {
-        host: url.hostname.replace(/^\[|\]$/g, ''),
-        port: url.port === '' ? (isHttps ? 443 : 80) : Number(url.port),
-        path: url.pathname + url.search,
-        method: 'GET',
-        lookup: pinnedLookup,
-        agent: false,
-        headers: {
-          'user-agent': 'Sentinel/0.1.0 (authorized security scanner)',
-          accept: '*/*',
-          connection: 'close',
+      const isHttps = url.protocol === 'https:';
+      const transport = isHttps ? https : http;
+
+      const req = transport.request(
+        {
+          host: url.hostname.replace(/^\[|\]$/g, ''),
+          port: url.port === '' ? (isHttps ? 443 : 80) : Number(url.port),
+          path: url.pathname + url.search,
+          method: 'GET',
+          lookup: pinnedLookup,
+          agent: false,
+          headers: {
+            'user-agent': 'Sentinel/0.1.0 (authorized security scanner)',
+            accept: '*/*',
+            connection: 'close',
+          },
         },
-      },
-      (res) => {
+        (res) => {
+          clearTimeout(timer);
+          const headers: Record<string, string | string[]> = {};
+          for (const [name, value] of Object.entries(res.headers)) {
+            if (value !== undefined) headers[name] = value;
+          }
+          const result: RawResponse = {
+            status: res.statusCode ?? 0,
+            headers,
+            remoteIp: ip,
+            timingMs: Math.round(performance.now() - started),
+          };
+          res.destroy();
+          resolve(result);
+        },
+      );
+
+      timer = setTimeout(() => {
+        req.destroy(new HttpRequestError('TIMEOUT', `no response within ${options.timeoutMs}ms`));
+      }, options.timeoutMs);
+
+      req.on('error', (err) => {
         clearTimeout(timer);
-        const headers: Record<string, string | string[]> = {};
-        for (const [name, value] of Object.entries(res.headers)) {
-          if (value !== undefined) headers[name] = value;
-        }
-        const result: RawResponse = {
-          status: res.statusCode ?? 0,
-          headers,
-          remoteIp: ip,
-          timingMs: Math.round(performance.now() - started),
-        };
-        res.destroy();
-        resolve(result);
-      },
-    );
+        reject(toHttpError(err));
+      });
 
-    const timer = setTimeout(() => {
-      req.destroy(new HttpRequestError('TIMEOUT', `no response within ${options.timeoutMs}ms`));
-    }, options.timeoutMs);
-
-    req.on('error', (err) => {
+      req.end();
+    } catch (err) {
       clearTimeout(timer);
-      reject(toHttpError(err));
-    });
-
-    req.end();
+      reject(
+        new HttpRequestError(
+          'INVALID_URL',
+          err instanceof Error ? err.message : 'could not build the request',
+        ),
+      );
+    }
   });
 }
