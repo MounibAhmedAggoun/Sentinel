@@ -1,6 +1,7 @@
 import http from 'node:http';
 import https from 'node:https';
 import type { LookupFunction } from 'node:net';
+import { SCANNER_VERSION } from '../version.js';
 import type { HttpErrorCode } from './types.js';
 
 export class HttpRequestError extends Error {
@@ -70,7 +71,7 @@ export function requestOnce(
           lookup: pinnedLookup,
           agent: false,
           headers: {
-            'user-agent': 'Sentinel/0.1.0 (authorized security scanner)',
+            'user-agent': `Sentinel/${SCANNER_VERSION} (authorized security scanner)`,
             accept: '*/*',
             connection: 'close',
           },
