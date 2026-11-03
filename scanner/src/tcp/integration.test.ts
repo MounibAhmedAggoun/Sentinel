@@ -39,13 +39,18 @@ describe('checkPort against a local server', () => {
     expect(result.state).toBe('closed');
   });
 
-  it('reports a timeout when nothing answers', async () => {
-    // 10.255.255.1 is a non-routable address. Packets get dropped, so the connection hangs.
-    const result = await checkPort('10.255.255.1', 80, 300);
+  // Needs a network that silently drops packets to 10.255.255.1, so it is opt-in.
+  // Run with: SENTINEL_NETWORK_TESTS=1 npm test
+  it.skipIf(process.env.SENTINEL_NETWORK_TESTS !== '1')(
+    'reports a timeout when nothing answers',
+    async () => {
+      // 10.255.255.1 is a non-routable address. Packets get dropped, so the connection hangs.
+      const result = await checkPort('10.255.255.1', 80, 300);
 
-    expect(['timeout', 'error']).toContain(result.state);
-    expect(result.timingMs).toBeLessThan(1500);
-  });
+      expect(['timeout', 'error']).toContain(result.state);
+      expect(result.timingMs).toBeLessThan(1500);
+    },
+  );
 });
 
 describe('scanPorts against a local server', () => {
