@@ -1,4 +1,14 @@
-import { mkdtemp, readFile, readdir, rm, stat } from 'node:fs/promises';
+import {
+  lstat,
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  rm,
+  stat,
+  symlink,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -69,6 +79,28 @@ describe('writeReport', () => {
 
     const parsed = JSON.parse(await readFile(file, 'utf8')) as Report;
     expect(parsed.target).toBe('other.example.com');
+  });
+
+  it('replaces a symlink at the target path instead of following it', async () => {
+    const victim = path.join(dir, 'victim.txt');
+    const file = path.join(dir, 'report.json');
+    await writeFile(victim, 'keep me');
+    await symlink(victim, file);
+
+    await writeReport(sampleReport(), file);
+
+    expect(await readFile(victim, 'utf8')).toBe('keep me');
+    expect((await lstat(file)).isSymbolicLink()).toBe(false);
+    expect(reportSchema.safeParse(JSON.parse(await readFile(file, 'utf8'))).success).toBe(true);
+  });
+
+  it('cleans up the temporary file when the final rename fails', async () => {
+    const file = path.join(dir, 'report.json');
+    await mkdir(file);
+
+    await expect(writeReport(sampleReport(), file)).rejects.toThrow();
+
+    expect(await readdir(dir)).toEqual(['report.json']);
   });
 
   it('refuses to write an invalid report', async () => {
