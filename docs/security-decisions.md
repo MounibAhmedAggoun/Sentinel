@@ -280,3 +280,35 @@ A running log. Add an entry whenever a security-relevant choice is made.
   cookie parser to record `Path` and `Domain`, which it does not yet. The SPF
   10-DNS-lookup limit needs recursive `include:` resolution, which is
   separate work.
+
+## SSRF corpus, property tests and mutation testing (S-01)
+
+- **Decision:** The net-guard is tested in three layers, each answering a
+  different question.
+  - **Corpus** (`core/src/ssrf-corpus.test.ts`, `resolve-target.real-dns.test.ts`):
+    a table of known bypass attempts, run against the real `checkIp` and
+    `resolveTarget` with no mocks. It covers numeric forms (`2130706433`,
+    `0x7f000001`, `0177.0.0.1`, `127.1`), IPv6 forms (mapped, NAT64, 6to4, zone
+    ids), special IPv4 ranges (CGNAT, link-local metadata, test nets,
+    multicast, broadcast), and non-IP input such as `localhost.`. Add a row
+    whenever a new trick is found.
+  - **Property tests** (`core/src/ssrf-properties.test.ts`): fast-check
+    generates random addresses inside every blocked range, each as dotted IPv4
+    and as IPv4-mapped IPv6 in dotted and hex form. Every one must be rejected,
+    and local ranges must be allowed only with `--allow-private`.
+  - **Mutation testing** (`npm run mutation`, Stryker): makes small deliberate
+    changes to `net-guard.ts` and checks that the tests fail each time.
+- **Result:** 24 mutants, 24 killed, mutation score 100% (target was above
+  85%).
+- **What the score covers:** Only the guard's own logic in `net-guard.ts`. The
+  lists of private, loopback, and link-local ranges live in `ipaddr.js` and are
+  not mutated. The corpus and property tests are what check that behavior.
+- **Why:** The guard is the most important code in the repository, and a
+  passing test suite does not show the tests would notice a weakened
+  condition. Mutation testing measures that directly.
+- **Not covered yet:** DNS rebinding with a resolver that changes its answer
+  between lookups, and redirect tricks, need a controlled resolver or server.
+  The mutation run is manual and is not part of CI, because it is slow
+  compared with the normal checks.
+- **Known gap:** The README does not link to the corpus yet, and there is no
+  published mutation-score badge.
