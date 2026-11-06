@@ -6,7 +6,8 @@ import { resolveTarget } from './resolve-target.js';
  * use names whose answer does not depend on the internet.
  */
 
-describe('resolveTarget with the real resolver', () => {
+// Real DNS lookups depend on the network, so allow more time than the 5s default.
+describe('resolveTarget with the real resolver', { timeout: 15_000 }, () => {
   it('blocks localhost, which really resolves to loopback', async () => {
     const result = await resolveTarget('localhost');
 
