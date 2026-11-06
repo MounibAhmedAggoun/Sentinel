@@ -12,6 +12,12 @@ import {
   scanTls,
   writeReport,
 } from '@sentinel/scanner';
+import {
+  createDeadline,
+  DeadlineError,
+  DEFAULT_MAX_DURATION_SECONDS,
+  parseMaxDuration,
+} from './deadline.js';
 import { decideExitCode, ExitCode } from './exit-codes.js';
 import { formatTerminal, sanitize } from './format.js';
 import { logger } from './logger.js';
@@ -40,6 +46,11 @@ program
     'also probe for outdated TLS versions (a few extra handshakes)',
     false,
   )
+  .option(
+    '--max-duration <seconds>',
+    'stop the scan if it runs longer than this (1 to 3600)',
+    String(DEFAULT_MAX_DURATION_SECONDS),
+  )
   .action(
     async (
       rawTarget: string,
@@ -48,6 +59,7 @@ program
         json?: string;
         allowPrivate: boolean;
         probeLegacyTls: boolean;
+        maxDuration: string;
       },
     ) => {
       try {
@@ -70,9 +82,22 @@ program
           ports = parsedPorts.ports;
         }
 
+        const duration = parseMaxDuration(options.maxDuration);
+        if (!duration.ok) {
+          logger.error({ reason: duration.error }, 'invalid max duration');
+          process.exitCode = ExitCode.Usage;
+          return;
+        }
+
         logger.info({ target }, 'scan requested');
 
-        const result = await resolveTarget(target, { allowPrivate: options.allowPrivate });
+        // One clock for the whole scan. A step that runs past it, or a step that
+        // would start after it, stops the scan.
+        const withDeadline = createDeadline(duration.ms);
+
+        const result = await withDeadline(() =>
+          resolveTarget(target, { allowPrivate: options.allowPrivate }),
+        );
         if (!result.allowed) {
           logger.error({ target, reason: result.reason }, 'target rejected');
           process.exitCode = ExitCode.Usage;
@@ -93,18 +118,23 @@ program
             ? Promise.resolve(result)
             : resolveTarget(host, opts);
 
-        const dns = await resolveDns(target);
-        const http = await fetchHttp(`https://${target}/`, { allowPrivate, resolve: resolveOnce });
-        const httpPlain = await fetchHttp(`http://${target}/`, {
-          allowPrivate,
-          resolve: resolveOnce,
-        });
-        const tcp = await scanPorts(target, { ports, allowPrivate, resolve: resolveOnce });
-        const tls = await scanTls(target, {
-          allowPrivate,
-          probeLegacy: options.probeLegacyTls,
-          resolve: resolveOnce,
-        });
+        const dns = await withDeadline(() => resolveDns(target));
+        const http = await withDeadline(() =>
+          fetchHttp(`https://${target}/`, { allowPrivate, resolve: resolveOnce }),
+        );
+        const httpPlain = await withDeadline(() =>
+          fetchHttp(`http://${target}/`, { allowPrivate, resolve: resolveOnce }),
+        );
+        const tcp = await withDeadline(() =>
+          scanPorts(target, { ports, allowPrivate, resolve: resolveOnce }),
+        );
+        const tls = await withDeadline(() =>
+          scanTls(target, {
+            allowPrivate,
+            probeLegacy: options.probeLegacyTls,
+            resolve: resolveOnce,
+          }),
+        );
 
         const scan = { target, dns, http, httpPlain, tcp, tls };
         const findings = evaluate(scan);
@@ -142,10 +172,17 @@ program
           hasFindings: findings.some((finding) => finding.severity !== 'informational'),
         });
       } catch (err) {
-        logger.error(
-          { reason: err instanceof Error ? err.message : 'unknown error' },
-          'scan failed unexpectedly',
-        );
+        if (err instanceof DeadlineError) {
+          logger.error(
+            { maxDurationSeconds: Number(options.maxDuration) },
+            'scan stopped: it exceeded the maximum duration',
+          );
+        } else {
+          logger.error(
+            { reason: err instanceof Error ? err.message : 'unknown error' },
+            'scan failed unexpectedly',
+          );
+        }
         process.exitCode = ExitCode.ScanError;
       }
     },
