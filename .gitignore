@@ -16,3 +16,5 @@ reports/
 .DS_Store
 .idea/
 .vscode/
+.stryker-tmp/
+reports/
