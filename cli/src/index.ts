@@ -22,6 +22,7 @@ import { decideExitCode, ExitCode } from './exit-codes.js';
 import { formatTerminal, sanitize } from './format.js';
 import { logger } from './logger.js';
 import { countFailedModules } from './module-failures.js';
+import { parseTimeout } from './timeout.js';
 import { targetSchema } from './validate.js';
 import { validateReportFile } from './validate-report.js';
 
@@ -51,6 +52,10 @@ program
     'stop the scan if it runs longer than this (1 to 3600)',
     String(DEFAULT_MAX_DURATION_SECONDS),
   )
+  .option(
+    '--timeout <seconds>',
+    'time limit for each HTTP request, TCP connection and TLS handshake (1 to 60)',
+  )
   .action(
     async (
       rawTarget: string,
@@ -60,6 +65,7 @@ program
         allowPrivate: boolean;
         probeLegacyTls: boolean;
         maxDuration: string;
+        timeout?: string;
       },
     ) => {
       try {
@@ -87,6 +93,18 @@ program
           logger.error({ reason: duration.error }, 'invalid max duration');
           process.exitCode = ExitCode.Usage;
           return;
+        }
+
+        // Without --timeout, each module keeps its own default.
+        let timeoutOption: { timeoutMs?: number } = {};
+        if (options.timeout !== undefined) {
+          const timeout = parseTimeout(options.timeout);
+          if (!timeout.ok) {
+            logger.error({ reason: timeout.error }, 'invalid timeout');
+            process.exitCode = ExitCode.Usage;
+            return;
+          }
+          timeoutOption = { timeoutMs: timeout.ms };
         }
 
         logger.info({ target }, 'scan requested');
@@ -120,19 +138,20 @@ program
 
         const dns = await withDeadline(() => resolveDns(target));
         const http = await withDeadline(() =>
-          fetchHttp(`https://${target}/`, { allowPrivate, resolve: resolveOnce }),
+          fetchHttp(`https://${target}/`, { allowPrivate, resolve: resolveOnce, ...timeoutOption }),
         );
         const httpPlain = await withDeadline(() =>
-          fetchHttp(`http://${target}/`, { allowPrivate, resolve: resolveOnce }),
+          fetchHttp(`http://${target}/`, { allowPrivate, resolve: resolveOnce, ...timeoutOption }),
         );
         const tcp = await withDeadline(() =>
-          scanPorts(target, { ports, allowPrivate, resolve: resolveOnce }),
+          scanPorts(target, { ports, allowPrivate, resolve: resolveOnce, ...timeoutOption }),
         );
         const tls = await withDeadline(() =>
           scanTls(target, {
             allowPrivate,
             probeLegacy: options.probeLegacyTls,
             resolve: resolveOnce,
+            ...timeoutOption,
           }),
         );
 
