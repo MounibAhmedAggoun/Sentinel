@@ -12,6 +12,7 @@ import {
   scanTls,
   writeReport,
 } from '@sentinel/scanner';
+import { parseConcurrency } from './concurrency.js';
 import {
   createDeadline,
   DeadlineError,
@@ -56,6 +57,7 @@ program
     '--timeout <seconds>',
     'time limit for each HTTP request, TCP connection and TLS handshake (1 to 60)',
   )
+  .option('--concurrency <number>', 'how many TCP port checks run at once (1 to 20, default 5)')
   .action(
     async (
       rawTarget: string,
@@ -66,6 +68,7 @@ program
         probeLegacyTls: boolean;
         maxDuration: string;
         timeout?: string;
+        concurrency?: string;
       },
     ) => {
       try {
@@ -107,6 +110,18 @@ program
           timeoutOption = { timeoutMs: timeout.ms };
         }
 
+        // Without --concurrency, the TCP module keeps its own default.
+        let concurrencyOption: { concurrency?: number } = {};
+        if (options.concurrency !== undefined) {
+          const concurrency = parseConcurrency(options.concurrency);
+          if (!concurrency.ok) {
+            logger.error({ reason: concurrency.error }, 'invalid concurrency');
+            process.exitCode = ExitCode.Usage;
+            return;
+          }
+          concurrencyOption = { concurrency: concurrency.value };
+        }
+
         logger.info({ target }, 'scan requested');
 
         // One clock for the whole scan. A step that runs past it, or a step that
@@ -144,7 +159,13 @@ program
           fetchHttp(`http://${target}/`, { allowPrivate, resolve: resolveOnce, ...timeoutOption }),
         );
         const tcp = await withDeadline(() =>
-          scanPorts(target, { ports, allowPrivate, resolve: resolveOnce, ...timeoutOption }),
+          scanPorts(target, {
+            ports,
+            allowPrivate,
+            resolve: resolveOnce,
+            ...timeoutOption,
+            ...concurrencyOption,
+          }),
         );
         const tls = await withDeadline(() =>
           scanTls(target, {
