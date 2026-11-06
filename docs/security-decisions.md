@@ -312,3 +312,46 @@ A running log. Add an entry whenever a security-relevant choice is made.
   compared with the normal checks.
 - **Known gap:** The README does not link to the corpus yet, and there is no
   published mutation-score badge.
+
+## Resource limits and politeness (S-03)
+
+- **Decision:** Three flags limit how much a scan can take and how hard it
+  hits a target.
+  - `--max-duration <seconds>`: a global deadline for the whole scan, 1 to
+    3600, default 120. One clock starts when the target is validated. A module
+    that runs past it, or that would start after it, stops the scan. The scan
+    logs an error and exits with code 3 (scan error).
+  - `--timeout <seconds>`: the time limit for each HTTP request, TCP
+    connection, and TLS handshake, 1 to 60. Without it, each module keeps its
+    own default (10, 3, and 5 seconds).
+  - `--concurrency <number>`: how many TCP port checks run at once, 1 to 20.
+    Without it, the TCP module keeps its default of 5.
+- **Why:** Per-request timeouts alone do not bound a scan. A target that
+  answers slowly at every step, or a redirect chain, can add them up with no
+  overall limit. The limits also keep a scan from hitting a target harder than
+  the owner expects.
+- **Strict parsing:** Each flag accepts only whole numbers inside its range.
+  Values such as `1.5`, `1e3`, `10s`, a leading space, or an empty string are
+  rejected with a usage error before any network activity.
+- **Tested against real servers, not mocks:**
+  - A real local listener that accepts connections and never answers: with
+    `--max-duration 5` the scan stopped after 5.0 seconds with exit code 3.
+  - The same listener with `--timeout 2`: the HTTPS request and the TLS
+    handshake each stopped at 2000 ms, and the scan finished in 4.5 seconds.
+  - A non-routable address that drops packets, with `--timeout 2`: nine port
+    checks took 27.7 seconds at `--concurrency 1` and 8.6 seconds at
+    `--concurrency 9`.
+- **Alternatives considered:** Putting the deadline inside each module.
+  Rejected because the CLI owns the order of the steps, so one clock there
+  covers every module and any step added later.
+- **Known gaps:**
+  - The deadline stops the scan between and during steps, but it does not
+    cancel a request already in flight. That request ends on its own timeout.
+  - `--timeout` does not apply to DNS lookups, and `--concurrency` applies only
+    to TCP port checks. The HTTP and TLS modules still run one request at a
+    time.
+  - There is no pacing between requests and no per-target cooldown. Those
+    matter once there is a hosted service (S-03 in the review plan covers the
+    future worker).
+  - The real-server runs above were manual. No automated test runs the CLI
+    against a hanging server yet, and the planned lab does not exist yet.
