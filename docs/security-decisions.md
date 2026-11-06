@@ -355,3 +355,31 @@ A running log. Add an entry whenever a security-relevant choice is made.
     future worker).
   - The real-server runs above were manual. No automated test runs the CLI
     against a hanging server yet, and the planned lab does not exist yet.
+
+## Supply-chain checks in CI (S-04, part 2)
+
+- **Decision:** Two automatic checks now guard the repository.
+  - **Audit gate:** CI runs `npm audit --omit=dev --audit-level=high` on every
+    push and pull request. A high or critical advisory in a dependency that
+    ships to users fails the build. Dev-only tools are skipped.
+  - **CodeQL:** GitHub's default CodeQL setup scans the code for known
+    vulnerability patterns.
+- **Why the audit gate skips dev tools:** Advisories in test and lint tools
+  never reach users. Failing the build on them would block unrelated work.
+  At the time of writing the shipped dependencies have 0 advisories. The
+  remaining 12 moderate advisories all come from one `minimatch` issue inside
+  ESLint, typescript-eslint, and Stryker, with no safe fix. They are watched
+  and left alone, because the only offered fix is an older, breaking version.
+- **CodeQL alerts dismissed:** The first scan raised two "Disabling
+  certificate validation" alerts, at `rejectUnauthorized: false` in
+  `scanner/src/tls/connect.ts` and `scanner/src/tls/legacy-probe.ts`. Both are
+  intentional (see "TLS module (Phase 5)" above). Each socket completes the
+  handshake, reads the certificate and the trust verdict, and is destroyed. A
+  search of the TLS module finds no `write`, `end`, or `pipe` calls on any
+  socket. Both alerts were dismissed on GitHub as "Won't fix" with that
+  reason written in the comment.
+- **Why dismiss and not suppress in code:** The dismissal keeps the reasoning
+  visible on GitHub next to the alert. If either call ever starts to send
+  data, a new alert is the first thing that should be questioned.
+- **Known gaps:** Branch protection, OpenSSF Scorecard, an SBOM on releases,
+  and npm provenance for publishing are not set up yet.
