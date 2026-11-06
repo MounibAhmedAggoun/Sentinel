@@ -22,6 +22,28 @@ describe('dnsRules: clean domain', () => {
   });
 });
 
+describe('dnsRules: IP address targets', () => {
+  const noRecords = { spf: null, dmarc: null, txt: NODATA, dmarcTxt: NODATA, caa: NODATA } as const;
+
+  it('produces nothing for an IPv4 target, even with no SPF, DMARC or CAA records', () => {
+    expect(dnsRules(withDns({ hostname: '127.0.0.1', ...noRecords }))).toEqual([]);
+  });
+
+  it('produces nothing for an IPv6 target', () => {
+    expect(dnsRules(withDns({ hostname: '2606:4700:4700::1111', ...noRecords }))).toEqual([]);
+  });
+
+  it('still judges a real domain name with no records', () => {
+    expect(ids(withDns({ hostname: 'example.com', ...noRecords }))).toEqual(
+      expect.arrayContaining([
+        RULE_IDS.DNS_SPF_MISSING,
+        RULE_IDS.DNS_DMARC_MISSING,
+        RULE_IDS.DNS_CAA_MISSING,
+      ]),
+    );
+  });
+});
+
 describe('dnsRules: SPF', () => {
   it('reports a missing SPF record when TXT clearly has none', () => {
     const scan = withDns({ spf: null, txt: { ok: true, records: ['hello'] } });

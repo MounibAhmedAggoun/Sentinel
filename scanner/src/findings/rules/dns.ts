@@ -1,3 +1,4 @@
+import { isIP } from 'node:net';
 import type { DnsLookup } from '../../dns/types.js';
 import { RULE_IDS } from '../ids.js';
 import type { Finding, Rule } from '../types.js';
@@ -18,6 +19,11 @@ function answered<T>(lookup: DnsLookup<T>): boolean {
 
 export const dnsRules: Rule = (scan) => {
   const { dns } = scan;
+
+  // SPF, DMARC and CAA are domain records. An IP address has none, so judging
+  // one would only produce false "not observed" findings.
+  if (isIP(dns.hostname) !== 0) return [];
+
   const findings: Finding[] = [];
 
   // SPF lives in the TXT records of the domain itself.
