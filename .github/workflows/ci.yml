@@ -25,4 +25,7 @@ jobs:
       - run: npm run format:check
       - run: npm run typecheck
       - run: npm test
+      # Builds the CLI bundle and runs it, so a broken bundle fails CI.
+      - run: npm run build --workspace cli
+      - run: node cli/dist/index.js --version
       - run: npm audit --omit=dev --audit-level=high
