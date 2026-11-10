@@ -1,3 +1,4 @@
+import { judgedChain } from '../helpers.js';
 import { RULE_IDS } from '../ids.js';
 import type { CookieInfo } from '../../http/types.js';
 import type { Finding, Rule } from '../types.js';
@@ -38,9 +39,10 @@ function cookieFinding(
 }
 
 export const cookieRules: Rule = (scan) => {
-  if (scan.http.error !== null) return [];
+  const chain = judgedChain(scan);
+  if (chain === null) return [];
 
-  const cookies = collectCookies(scan.http.hops);
+  const cookies = collectCookies(chain.hops);
   const findings: Finding[] = [];
 
   // Secure only matters for cookies set over HTTPS.
