@@ -29,3 +29,14 @@ jobs:
       - run: npm run build --workspace cli
       - run: node cli/dist/index.js --version
       - run: npm audit --omit=dev --audit-level=high
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build the image
+        run: docker build -t sentinel:ci .
+      - name: The image runs and reports its version
+        run: docker run --rm sentinel:ci --version
+      - name: The image does not run as root
+        run: test "$(docker run --rm --entrypoint id sentinel:ci -u)" != "0"
