@@ -21,8 +21,11 @@ import {
 } from './deadline.js';
 import { decideExitCode, ExitCode } from './exit-codes.js';
 import { formatTerminal, sanitize } from './format.js';
+import { formatHtml } from './format-html.js';
+import { formatMarkdown } from './format-markdown.js';
 import { logger } from './logger.js';
 import { countFailedModules } from './module-failures.js';
+import { parseFormat } from './output-format.js';
 import { parseTimeout } from './timeout.js';
 import { targetSchema } from './validate.js';
 import { validateReportFile } from './validate-report.js';
@@ -42,6 +45,7 @@ program
   .argument('<target>', 'hostname or IP address you are authorized to scan')
   .option('--ports <list>', 'comma-separated ports to check, e.g. 80,443')
   .option('--json <file>', 'also write the full report to this JSON file')
+  .option('--format <name>', 'how to print the result: table, markdown, or html', 'table')
   .option('--allow-private', 'allow private/internal addresses (local testing only)', false)
   .option(
     '--probe-legacy-tls',
@@ -64,6 +68,7 @@ program
       options: {
         ports?: string;
         json?: string;
+        format: string;
         allowPrivate: boolean;
         probeLegacyTls: boolean;
         maxDuration: string;
@@ -89,6 +94,13 @@ program
             return;
           }
           ports = parsedPorts.ports;
+        }
+
+        const outputFormat = parseFormat(options.format);
+        if (!outputFormat.ok) {
+          logger.error({ reason: outputFormat.error }, 'invalid format');
+          process.exitCode = ExitCode.Usage;
+          return;
         }
 
         const duration = parseMaxDuration(options.maxDuration);
@@ -204,7 +216,13 @@ program
           }
         }
 
-        console.log(formatTerminal(report));
+        if (outputFormat.format === 'markdown') {
+          console.log(formatMarkdown(report));
+        } else if (outputFormat.format === 'html') {
+          console.log(formatHtml(report));
+        } else {
+          console.log(formatTerminal(report));
+        }
 
         process.exitCode = decideExitCode({
           modulesRun: 5,
