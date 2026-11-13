@@ -1,7 +1,13 @@
 {
-  "name": "@sentinel/cli",
+  "name": "@nyxxaaris/sentinel",
   "version": "0.2.0",
-  "private": true,
+  "description": "Defensive, evidence-first web reconnaissance scanner: DNS, HTTP, TCP and TLS checks with SSRF-safe networking.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MounibAhmedAggoun/Sentinel.git",
+    "directory": "cli"
+  },
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -10,13 +16,21 @@
   "files": [
     "dist"
   ],
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsup"
   },
   "dependencies": {
     "commander": "^15.0.0",
     "pino": "^10.4.0",
-    "zod": "^4.6.5",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
     "@sentinel/core": "*",
     "@sentinel/scanner": "*"
   }
