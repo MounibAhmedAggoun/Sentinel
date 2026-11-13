@@ -86,19 +86,21 @@ never as a finding.
 
 ## Options
 
-| Option                     | Meaning                                                                 |
-| -------------------------- | ----------------------------------------------------------------------- |
-| `--ports <list>`           | Ports to check, from the allowlist, e.g. `80,443`                       |
-| `--format <name>`          | Print `table` (default), `markdown` or `html`                           |
-| `--json <file>`            | Also write the full report to a JSON file                               |
-| `--max-duration <seconds>` | Stop the scan after this long (1 to 3600, default 120)                  |
-| `--timeout <seconds>`      | Limit for each HTTP request, TCP connection and TLS handshake (1 to 60) |
-| `--concurrency <number>`   | TCP port checks run at once (1 to 20, default 5)                        |
-| `--probe-legacy-tls`       | Also probe for TLS 1.0, 1.1 and 1.3 support (a few extra handshakes)    |
-| `--allow-private`          | Allow private and loopback addresses, for local testing only            |
+| Option                     | Meaning                                                                              |
+| -------------------------- | ------------------------------------------------------------------------------------ |
+| `--ports <list>`           | Ports to check, from the allowlist, e.g. `80,443`                                    |
+| `--format <name>`          | Print `table` (default), `markdown` or `html`                                        |
+| `--fail-on <severity>`     | Exit 1 on a finding at or above `informational`, `low` (default), `medium` or `high` |
+| `--json <file>`            | Also write the full report to a JSON file                                            |
+| `--max-duration <seconds>` | Stop the scan after this long (1 to 3600, default 120)                               |
+| `--timeout <seconds>`      | Limit for each HTTP request, TCP connection and TLS handshake (1 to 60)              |
+| `--concurrency <number>`   | TCP port checks run at once (1 to 20, default 5)                                     |
+| `--probe-legacy-tls`       | Also probe for TLS 1.0, 1.1 and 1.3 support (a few extra handshakes)                 |
+| `--allow-private`          | Allow private and loopback addresses, for local testing only                         |
 
-Exit codes: `0` clean, `1` findings of low severity or higher, `2` usage error,
-`3` scan error (including a scan that exceeds `--max-duration`).
+Exit codes: `0` clean, `1` findings at or above the `--fail-on` severity (default
+`low`), `2` usage error, `3` scan error (including a scan that exceeds
+`--max-duration`).
 
 ## Safety model
 
