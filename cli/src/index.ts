@@ -20,6 +20,7 @@ import {
   parseMaxDuration,
 } from './deadline.js';
 import { decideExitCode, ExitCode } from './exit-codes.js';
+import { DEFAULT_FAIL_ON, hasFindingsAtOrAbove, parseFailOn } from './fail-on.js';
 import { formatTerminal, sanitize } from './format.js';
 import { formatHtml } from './format-html.js';
 import { formatMarkdown } from './format-markdown.js';
@@ -46,6 +47,11 @@ program
   .option('--ports <list>', 'comma-separated ports to check, e.g. 80,443')
   .option('--json <file>', 'also write the full report to this JSON file')
   .option('--format <name>', 'how to print the result: table, markdown, or html', 'table')
+  .option(
+    '--fail-on <severity>',
+    'exit with code 1 when a finding is at or above this severity: informational, low, medium, high',
+    DEFAULT_FAIL_ON,
+  )
   .option('--allow-private', 'allow private/internal addresses (local testing only)', false)
   .option(
     '--probe-legacy-tls',
@@ -69,6 +75,7 @@ program
         ports?: string;
         json?: string;
         format: string;
+        failOn: string;
         allowPrivate: boolean;
         probeLegacyTls: boolean;
         maxDuration: string;
@@ -99,6 +106,13 @@ program
         const outputFormat = parseFormat(options.format);
         if (!outputFormat.ok) {
           logger.error({ reason: outputFormat.error }, 'invalid format');
+          process.exitCode = ExitCode.Usage;
+          return;
+        }
+
+        const failOn = parseFailOn(options.failOn);
+        if (!failOn.ok) {
+          logger.error({ reason: failOn.error }, 'invalid fail-on');
           process.exitCode = ExitCode.Usage;
           return;
         }
@@ -227,7 +241,7 @@ program
         process.exitCode = decideExitCode({
           modulesRun: 5,
           modulesFailed: countFailedModules(scan),
-          hasFindings: findings.some((finding) => finding.severity !== 'informational'),
+          hasFindings: hasFindingsAtOrAbove(findings, failOn.severity),
         });
       } catch (err) {
         if (err instanceof DeadlineError) {
