@@ -13,6 +13,8 @@ export type * from './tls/types.js';
 export { evaluate, ALL_RULES } from './findings/engine.js';
 export { RULE_IDS, type RuleId } from './findings/ids.js';
 export { RULE_CATALOG, type CatalogEntry, type RuleArea } from './findings/catalog.js';
+export { renderRulePage, renderRuleIndex, type RuleDocContent } from './findings/rule-docs.js';
+export { RULE_DOC_CONTENT } from './findings/rule-docs-content.js';
 export type { Finding, Rule, ScanResult } from './findings/types.js';
 export { buildReport, type BuildReportInput } from './report/build.js';
 export { writeReport } from './report/write.js';
