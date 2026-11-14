@@ -113,14 +113,20 @@ describe('dnsRules: DMARC', () => {
   });
 
   it('reports p=none as informational with its own rule ID', () => {
-    const findings = dnsRules(withDns({ dmarc: { raw: 'v=DMARC1; p=none', policy: 'none' } }));
+    const findings = dnsRules(
+      withDns({ dmarc: { raw: 'v=DMARC1; p=none; rua=mailto:a@example.com', policy: 'none' } }),
+    );
 
     expect(findings.map((f) => f.ruleId)).toEqual([RULE_IDS.DNS_DMARC_MONITORING_ONLY]);
     expect(findings[0]?.severity).toBe('informational');
   });
 
   it.each(['quarantine', 'reject'] as const)('accepts p=%s', (policy) => {
-    expect(dnsRules(withDns({ dmarc: { raw: `v=DMARC1; p=${policy}`, policy } }))).toEqual([]);
+    expect(
+      dnsRules(
+        withDns({ dmarc: { raw: `v=DMARC1; p=${policy}; rua=mailto:a@example.com`, policy } }),
+      ),
+    ).toEqual([]);
   });
 });
 
@@ -206,5 +212,54 @@ describe('dnsRules: SPF record count and lookup limit', () => {
     const raw = `v=spf1 ${includes(10)} ip4:192.0.2.0/24 ip6:2001:db8::/32 -all`;
 
     expect(ids(withDns(spf(raw)))).toEqual([]);
+  });
+});
+
+describe('dnsRules: DMARC tags', () => {
+  const dmarc = (raw: string, policy: 'none' | 'quarantine' | 'reject'): ScanResult =>
+    withDns({ dmarc: { raw, policy } });
+  const RUA = 'rua=mailto:a@example.com';
+
+  it('notes a DMARC record without rua', () => {
+    const findings = dnsRules(dmarc('v=DMARC1; p=reject', 'reject'));
+
+    expect(findings.map((f) => f.ruleId)).toEqual([RULE_IDS.DNS_DMARC_NO_RUA]);
+    expect(findings[0]?.severity).toBe('informational');
+  });
+
+  it('reads tag names in any letter case', () => {
+    expect(ids(dmarc('v=DMARC1; p=reject; RUA=mailto:a@example.com', 'reject'))).toEqual([]);
+  });
+
+  it('notes a partial pct with an enforcing policy', () => {
+    const findings = dnsRules(dmarc(`v=DMARC1; p=quarantine; pct=50; ${RUA}`, 'quarantine'));
+
+    expect(findings.map((f) => f.ruleId)).toEqual([RULE_IDS.DNS_DMARC_PARTIAL_PCT]);
+    expect(findings[0]).toMatchObject({ severity: 'low', evidence: { pct: 50 } });
+  });
+
+  it('accepts pct=100', () => {
+    expect(ids(dmarc(`v=DMARC1; p=reject; pct=100; ${RUA}`, 'reject'))).toEqual([]);
+  });
+
+  it('does not judge pct when the policy is p=none', () => {
+    expect(ids(dmarc(`v=DMARC1; p=none; pct=50; ${RUA}`, 'none'))).toEqual([
+      RULE_IDS.DNS_DMARC_MONITORING_ONLY,
+    ]);
+  });
+
+  it('notes a subdomain policy weaker than the domain policy', () => {
+    const findings = dnsRules(dmarc(`v=DMARC1; p=reject; sp=none; ${RUA}`, 'reject'));
+
+    expect(findings.map((f) => f.ruleId)).toEqual([RULE_IDS.DNS_DMARC_WEAK_SUBDOMAIN_POLICY]);
+    expect(findings[0]).toMatchObject({
+      severity: 'low',
+      evidence: { policy: 'reject', subdomainPolicy: 'none' },
+    });
+  });
+
+  it('accepts a subdomain policy that is equal or stronger', () => {
+    expect(ids(dmarc(`v=DMARC1; p=reject; sp=reject; ${RUA}`, 'reject'))).toEqual([]);
+    expect(ids(dmarc(`v=DMARC1; p=quarantine; sp=reject; ${RUA}`, 'quarantine'))).toEqual([]);
   });
 });

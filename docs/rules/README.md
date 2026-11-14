@@ -35,5 +35,8 @@
 | [DNS-006](DNS-006.md)       | low               | SPF record observed without an enforcing policy                      |
 | [DNS-007](DNS-007.md)       | low               | More than one SPF record observed                                    |
 | [DNS-008](DNS-008.md)       | low               | SPF record observed with more than 10 DNS lookups                    |
+| [DNS-009](DNS-009.md)       | informational     | DMARC record observed without a reporting address                    |
+| [DNS-010](DNS-010.md)       | low               | DMARC record observed with a partial pct                             |
+| [DNS-011](DNS-011.md)       | low               | DMARC record observed with a weaker subdomain policy                 |
 | [TCP-001](TCP-001.md)       | informational     | TCP port &lt;port&gt; observed open                                  |
 | [TCP-002](TCP-002.md)       | low, medium       | &lt;service&gt; port &lt;port&gt; observed open                      |

@@ -1173,4 +1173,61 @@ example.com.  IN  TXT  "v=spf1 ip4:192.0.2.0/24 ip6:2001:db8::/32 include:_spf.e
       },
     ],
   },
+  'DNS-009': {
+    why: 'The rua tag in a DMARC record names an address that receives aggregate reports. The reports list which servers sent mail for the domain and whether it passed the SPF and DKIM checks. Without them, the domain owner has no view of legitimate mail that would fail a stricter policy, or of mail from servers they do not know about.',
+    falsePositives:
+      'Some domains leave reports off on purpose, for example when they use a reporting service that publishes the address elsewhere. Sentinel reads the first rua tag in the record it found, and it cannot tell whether reports arrive some other way. It checks the record at the scanned name, or at the organizational domain when the scanned name has none. This is informational for that reason.',
+    fixes: [
+      {
+        server: 'DNS zone',
+        snippet: `; Add a rua tag. Aggregate reports are sent to this address.
+_dmarc.example.com.  IN  TXT  "v=DMARC1; p=none; rua=mailto:dmarc-reports@example.com"`,
+      },
+    ],
+    references: [
+      {
+        title: 'RFC 7489: DMARC',
+        url: 'https://datatracker.ietf.org/doc/html/rfc7489',
+      },
+    ],
+  },
+
+  'DNS-010': {
+    why: 'The pct tag sets the share of failing mail that the DMARC policy applies to. With p=quarantine or p=reject and a pct below 100, the rest of the failing mail is handled as if the policy were one step weaker. The tag is meant for a gradual rollout, so a value below 100 that stays in place leaves part of the mail outside the policy.',
+    falsePositives:
+      'A partial pct is normal while a policy is being rolled out, and some domains keep it for a while on purpose. Sentinel does not judge pct when p=none, because pct changes nothing there and DNS-005 already covers that policy. It reads one DNS answer and cannot tell how long the value has been in place.',
+    fixes: [
+      {
+        server: 'DNS zone',
+        snippet: `; Once the reports look clean, apply the policy to all mail.
+; pct=100 is the default, so the tag can also be removed.
+_dmarc.example.com.  IN  TXT  "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc-reports@example.com"`,
+      },
+    ],
+    references: [
+      {
+        title: 'RFC 7489: DMARC',
+        url: 'https://datatracker.ietf.org/doc/html/rfc7489',
+      },
+    ],
+  },
+
+  'DNS-011': {
+    why: 'The sp tag sets the DMARC policy for subdomains, and the p tag sets it for the domain itself. When sp ranks below p, for example p=reject with sp=none, mail that claims to come from a subdomain is handled less strictly than mail from the main domain. Without an sp tag, subdomains inherit p.',
+    falsePositives:
+      'A weaker subdomain policy is sometimes chosen on purpose, for example when some subdomains send mail through services that are not yet set up for DMARC. A subdomain that publishes its own DMARC record overrides sp. Sentinel reads the record found at the scanned name or the organizational domain, and does not check each subdomain separately.',
+    fixes: [
+      {
+        server: 'DNS zone',
+        snippet: `; Remove sp so subdomains inherit p, or set it equal to p.
+_dmarc.example.com.  IN  TXT  "v=DMARC1; p=reject; sp=reject; rua=mailto:dmarc-reports@example.com"`,
+      },
+    ],
+    references: [
+      {
+        title: 'RFC 7489: DMARC',
+        url: 'https://datatracker.ietf.org/doc/html/rfc7489',
+      },
+    ],
+  },
 };

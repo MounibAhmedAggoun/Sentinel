@@ -149,6 +149,75 @@ export const dnsRules: Rule = (scan) => {
     });
   }
 
+  // DMARC tags. Read from the raw record, so the parsed record stays unchanged.
+  if (dns.dmarc !== null) {
+    const tags = new Map<string, string>();
+    for (const part of dns.dmarc.raw.split(';')) {
+      const at = part.indexOf('=');
+      if (at < 0) continue;
+      const key = part.slice(0, at).trim().toLowerCase();
+      if (key !== '' && !tags.has(key)) tags.set(key, part.slice(at + 1).trim());
+    }
+
+    const rua = tags.get('rua');
+    if (rua === undefined || rua === '') {
+      findings.push({
+        ruleId: RULE_IDS.DNS_DMARC_NO_RUA,
+        title: 'DMARC record observed without a reporting address',
+        severity: 'informational',
+        description: `The DMARC record for ${dns.hostname} has no rua tag, so no address receives aggregate reports about mail that passes or fails the checks. Without reports it is hard to see which mail a stricter policy would affect.`,
+        evidence: { raw: dns.dmarc.raw.slice(0, 200), foundAt: dns.dmarcFoundAt },
+        remediation:
+          'Consider adding a rua tag, such as rua=mailto:dmarc-reports@example.com, to receive aggregate reports.',
+      });
+    }
+
+    // pct only changes anything for quarantine and reject. p=none is covered by DNS-005.
+    const pctText = tags.get('pct');
+    const pct = pctText !== undefined && /^\d+$/.test(pctText) ? Number(pctText) : null;
+    if (
+      pct !== null &&
+      pct < 100 &&
+      (dns.dmarc.policy === 'quarantine' || dns.dmarc.policy === 'reject')
+    ) {
+      findings.push({
+        ruleId: RULE_IDS.DNS_DMARC_PARTIAL_PCT,
+        title: 'DMARC record observed with a partial pct',
+        severity: 'low',
+        description: `The DMARC record for ${dns.hostname} uses p=${dns.dmarc.policy} with pct=${pct}, so the policy applies to only ${pct}% of the mail that fails the checks. This is a common step while a policy is being rolled out.`,
+        evidence: {
+          raw: dns.dmarc.raw.slice(0, 200),
+          policy: dns.dmarc.policy,
+          pct,
+          foundAt: dns.dmarcFoundAt,
+        },
+        remediation: 'Once reports look clean, consider raising pct to 100 or removing the tag.',
+      });
+    }
+
+    // sp sets the policy for subdomains. It is weaker when it ranks below p.
+    const strength: Record<string, number> = { none: 0, quarantine: 1, reject: 2 };
+    const subPolicy = tags.get('sp')?.toLowerCase();
+    const domainStrength = dns.dmarc.policy !== null ? strength[dns.dmarc.policy] : undefined;
+    const subStrength = subPolicy !== undefined ? strength[subPolicy] : undefined;
+    if (domainStrength !== undefined && subStrength !== undefined && subStrength < domainStrength) {
+      findings.push({
+        ruleId: RULE_IDS.DNS_DMARC_WEAK_SUBDOMAIN_POLICY,
+        title: 'DMARC record observed with a weaker subdomain policy',
+        severity: 'low',
+        description: `The DMARC record for ${dns.hostname} sets p=${dns.dmarc.policy} for the domain but sp=${subPolicy} for its subdomains, so mail that claims to come from a subdomain is handled less strictly.`,
+        evidence: {
+          raw: dns.dmarc.raw.slice(0, 200),
+          policy: dns.dmarc.policy,
+          subdomainPolicy: subPolicy,
+          foundAt: dns.dmarcFoundAt,
+        },
+        remediation:
+          'If subdomains do not need a different policy, consider removing sp or setting it equal to p.',
+      });
+    }
+  }
+
   if (clearlyAbsent(dns.caa)) {
     findings.push({
       ruleId: RULE_IDS.DNS_CAA_MISSING,

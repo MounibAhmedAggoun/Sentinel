@@ -256,6 +256,29 @@ export const RULE_CATALOG: readonly CatalogEntry[] = [
       'The SPF record has more than 10 mechanisms that need a DNS lookup. Included records are not followed.',
   },
   {
+    id: 'DNS-009',
+    area: 'dns',
+    title: 'DMARC record observed without a reporting address',
+    severities: ['informational'],
+    summary: 'The DMARC record has no rua tag, so no address receives aggregate reports.',
+  },
+  {
+    id: 'DNS-010',
+    area: 'dns',
+    title: 'DMARC record observed with a partial pct',
+    severities: ['low'],
+    summary:
+      'The DMARC record uses p=quarantine or p=reject with a pct below 100, so the policy applies to only part of the mail.',
+  },
+  {
+    id: 'DNS-011',
+    area: 'dns',
+    title: 'DMARC record observed with a weaker subdomain policy',
+    severities: ['low'],
+    summary:
+      'The DMARC sp tag sets a weaker policy for subdomains than the p tag sets for the domain.',
+  },
+  {
     id: 'TCP-001',
     area: 'tcp',
     title: 'TCP port <port> observed open',

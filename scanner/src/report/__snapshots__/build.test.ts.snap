@@ -25,12 +25,12 @@ exports[`buildReport > matches a snapshot 1`] = `
     },
     "dmarc": {
       "policy": "reject",
-      "raw": "v=DMARC1; p=reject",
+      "raw": "v=DMARC1; p=reject; rua=mailto:dmarc@example.com",
     },
     "dmarcTxt": {
       "ok": true,
       "records": [
-        "v=DMARC1; p=reject",
+        "v=DMARC1; p=reject; rua=mailto:dmarc@example.com",
       ],
     },
     "hostname": "example.com",
