@@ -67,7 +67,12 @@ describe('headerRules', () => {
     const { 'x-frame-options': _a, ...rest } = CLEAN_HEADERS;
 
     expect(
-      ids(scanWithHeaders({ ...rest, 'content-security-policy': "default-src 'self'" })),
+      ids(
+        scanWithHeaders({
+          ...rest,
+          'content-security-policy': "default-src 'self'; base-uri 'self'",
+        }),
+      ),
     ).toEqual([RULE_IDS.HTTP_FRAME_PROTECTION_MISSING]);
   });
 
@@ -78,7 +83,8 @@ describe('headerRules', () => {
       ids(
         scanWithHeaders({
           ...rest,
-          'content-security-policy': "default-src 'self'; x-frame-ancestors 'none'",
+          'content-security-policy':
+            "default-src 'self'; base-uri 'self'; x-frame-ancestors 'none'",
         }),
       ),
     ).toEqual([RULE_IDS.HTTP_FRAME_PROTECTION_MISSING]);
@@ -194,7 +200,8 @@ describe('headerRules', () => {
     const findings = headerRules(
       scanWithHeaders({
         ...CLEAN_HEADERS,
-        'content-security-policy': "script-src 'self' 'unsafe-inline'; frame-ancestors 'none'",
+        'content-security-policy':
+          "script-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
       }),
     );
 
@@ -210,7 +217,8 @@ describe('headerRules', () => {
       ids(
         scanWithHeaders({
           ...CLEAN_HEADERS,
-          'content-security-policy': "script-src 'self' 'unsafe-eval'; frame-ancestors 'none'",
+          'content-security-policy':
+            "script-src 'self' 'unsafe-eval'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
         }),
       ),
     ).toEqual([RULE_IDS.HTTP_CSP_WEAK]);
@@ -221,7 +229,8 @@ describe('headerRules', () => {
       ids(
         scanWithHeaders({
           ...CLEAN_HEADERS,
-          'content-security-policy': "script-src *; frame-ancestors 'none'",
+          'content-security-policy':
+            "script-src *; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
         }),
       ),
     ).toEqual([RULE_IDS.HTTP_CSP_WEAK]);
@@ -232,7 +241,8 @@ describe('headerRules', () => {
       ids(
         scanWithHeaders({
           ...CLEAN_HEADERS,
-          'content-security-policy': "script-src *.example.com; frame-ancestors 'none'",
+          'content-security-policy':
+            "script-src *.example.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
         }),
       ),
     ).toEqual([]);
@@ -242,7 +252,8 @@ describe('headerRules', () => {
     const findings = headerRules(
       scanWithHeaders({
         ...CLEAN_HEADERS,
-        'content-security-policy': "default-src 'self' 'unsafe-inline'; frame-ancestors 'none'",
+        'content-security-policy':
+          "default-src 'self' 'unsafe-inline'; base-uri 'self'; frame-ancestors 'none'",
       }),
     );
 
@@ -255,7 +266,8 @@ describe('headerRules', () => {
       ids(
         scanWithHeaders({
           ...CLEAN_HEADERS,
-          'content-security-policy': "default-src *; script-src 'self'; frame-ancestors 'none'",
+          'content-security-policy':
+            "default-src *; script-src 'self'; base-uri 'self'; frame-ancestors 'none'",
         }),
       ),
     ).toEqual([]);
@@ -267,7 +279,7 @@ describe('headerRules', () => {
         scanWithHeaders({
           ...CLEAN_HEADERS,
           'content-security-policy':
-            "script-src 'self'; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'",
+            "script-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
         }),
       ),
     ).toEqual([]);
@@ -279,7 +291,7 @@ describe('headerRules', () => {
         scanWithHeaders({
           ...CLEAN_HEADERS,
           'content-security-policy':
-            "script-src 'nonce-abc123' 'unsafe-inline'; frame-ancestors 'none'",
+            "script-src 'nonce-abc123' 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
         }),
       ),
     ).toEqual([]);
@@ -291,7 +303,7 @@ describe('headerRules', () => {
         scanWithHeaders({
           ...CLEAN_HEADERS,
           'content-security-policy':
-            "script-src 'nonce-abc123' 'unsafe-eval'; frame-ancestors 'none'",
+            "script-src 'nonce-abc123' 'unsafe-eval'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
         }),
       ),
     ).toEqual([RULE_IDS.HTTP_CSP_WEAK]);
@@ -303,10 +315,57 @@ describe('headerRules', () => {
         scanWithHeaders({
           ...CLEAN_HEADERS,
           'content-security-policy':
-            "script-src 'self'; script-src 'unsafe-inline'; frame-ancestors 'none'",
+            "script-src 'self'; script-src 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
         }),
       ),
     ).toEqual([]);
+  });
+
+  it('notes a CSP with neither object-src nor default-src', () => {
+    const findings = headerRules(
+      scanWithHeaders({
+        ...CLEAN_HEADERS,
+        'content-security-policy': "script-src 'self'; base-uri 'self'; frame-ancestors 'none'",
+      }),
+    );
+
+    expect(findings.map((f) => f.ruleId)).toEqual([RULE_IDS.HTTP_CSP_NO_OBJECT_SRC]);
+    expect(findings[0]?.severity).toBe('informational');
+  });
+
+  it('accepts default-src as the fallback for object-src', () => {
+    expect(
+      ids(
+        scanWithHeaders({
+          ...CLEAN_HEADERS,
+          'content-security-policy': "default-src 'self'; base-uri 'self'; frame-ancestors 'none'",
+        }),
+      ),
+    ).toEqual([]);
+  });
+
+  it('accepts an explicit object-src without default-src', () => {
+    expect(
+      ids(
+        scanWithHeaders({
+          ...CLEAN_HEADERS,
+          'content-security-policy':
+            "script-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
+        }),
+      ),
+    ).toEqual([]);
+  });
+
+  it('notes a CSP without base-uri even when default-src is set', () => {
+    const findings = headerRules(
+      scanWithHeaders({
+        ...CLEAN_HEADERS,
+        'content-security-policy': "default-src 'self'; frame-ancestors 'none'",
+      }),
+    );
+
+    expect(findings.map((f) => f.ruleId)).toEqual([RULE_IDS.HTTP_CSP_NO_BASE_URI]);
+    expect(findings[0]?.severity).toBe('informational');
   });
 
   it('produces nothing when the HTTP check failed', () => {

@@ -1055,4 +1055,81 @@ Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains
       },
     ],
   },
+  'HTTP-013': {
+    why: "The object-src directive limits where plugin content, such as <object> and <embed> elements, may load from. When a policy has neither object-src nor default-src, nothing limits it, so a page that gets injected content may still load a plugin resource. Most sites no longer need plugins, and object-src 'none' says so.",
+    falsePositives:
+      'object-src falls back to default-src, so Sentinel reports this only when neither directive is present. A site that really uses plugin content needs a more specific value than none. Sentinel reads one response, and a policy set through a meta tag is not seen. Browsers have dropped most plugins, so the practical difference is smaller than it once was.',
+    fixes: [
+      {
+        server: 'nginx',
+        snippet: `# Add the directive to your existing policy. Do not send a second header.
+add_header Content-Security-Policy "default-src 'self'; object-src 'none'" always;`,
+      },
+      {
+        server: 'Apache',
+        snippet: `# Needs mod_headers. Add the directive to your existing policy.
+Header always set Content-Security-Policy "default-src 'self'; object-src 'none'"`,
+      },
+      {
+        server: 'Caddy',
+        snippet: `header Content-Security-Policy "default-src 'self'; object-src 'none'"`,
+      },
+      {
+        server: 'Express',
+        snippet: `app.use((req, res, next) => {
+  res.setHeader('Content-Security-Policy', "default-src 'self'; object-src 'none'");
+  next();
+});`,
+      },
+    ],
+    references: [
+      {
+        title: 'MDN: object-src',
+        url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/object-src',
+      },
+      {
+        title: 'MDN: Content-Security-Policy',
+        url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy',
+      },
+    ],
+  },
+
+  'HTTP-014': {
+    why: 'A <base> tag sets the address that relative links and script paths in a page are resolved against. The base-uri directive limits which addresses it may use. When it is absent, content injected into a page could add a <base> tag that points relative paths to another site, even if the script sources are restricted. The directive has no fallback, so default-src does not cover it.',
+    falsePositives:
+      'Many sites never use a <base> tag, so the practical effect depends on whether injection is possible in the first place. A site that does use <base> needs a value that matches it, not none. Sentinel reads one response and does not see a policy set through a meta tag.',
+    fixes: [
+      {
+        server: 'nginx',
+        snippet: `# Add the directive to your existing policy. Do not send a second header.
+add_header Content-Security-Policy "default-src 'self'; base-uri 'self'" always;`,
+      },
+      {
+        server: 'Apache',
+        snippet: `# Needs mod_headers. Add the directive to your existing policy.
+Header always set Content-Security-Policy "default-src 'self'; base-uri 'self'"`,
+      },
+      {
+        server: 'Caddy',
+        snippet: `header Content-Security-Policy "default-src 'self'; base-uri 'self'"`,
+      },
+      {
+        server: 'Express',
+        snippet: `app.use((req, res, next) => {
+  res.setHeader('Content-Security-Policy', "default-src 'self'; base-uri 'self'");
+  next();
+});`,
+      },
+    ],
+    references: [
+      {
+        title: 'MDN: base-uri',
+        url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/base-uri',
+      },
+      {
+        title: 'MDN: Content-Security-Policy',
+        url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy',
+      },
+    ],
+  },
 };

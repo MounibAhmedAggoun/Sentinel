@@ -164,6 +164,41 @@ export const headerRules: Rule = (scan) => {
           "Consider removing these sources from script-src, and using nonces or hashes instead of 'unsafe-inline'.",
       });
     }
+
+    // object-src falls back to default-src, so it is only judged when neither is set.
+    if (!directives.has('object-src') && !directives.has('default-src')) {
+      findings.push({
+        ruleId: RULE_IDS.HTTP_CSP_NO_OBJECT_SRC,
+        title: 'Content-Security-Policy observed without an object-src restriction',
+        severity: 'informational',
+        description: `The Content-Security-Policy header observed at ${hop.url} has no object-src directive and no default-src to fall back on, so the policy places no limit on plugin content such as <object> and <embed>.`,
+        evidence: {
+          header: 'Content-Security-Policy',
+          objectSrcPresent: false,
+          defaultSrcPresent: false,
+          value: cspHeader,
+          url: hop.url,
+        },
+        remediation: "Consider adding object-src 'none' unless the site needs plugin content.",
+      });
+    }
+
+    // base-uri has no fallback, so it is judged whenever it is absent.
+    if (!directives.has('base-uri')) {
+      findings.push({
+        ruleId: RULE_IDS.HTTP_CSP_NO_BASE_URI,
+        title: 'Content-Security-Policy observed without a base-uri directive',
+        severity: 'informational',
+        description: `The Content-Security-Policy header observed at ${hop.url} has no base-uri directive, so the policy does not limit which address a <base> tag in the page can set for relative links.`,
+        evidence: {
+          header: 'Content-Security-Policy',
+          baseUriPresent: false,
+          value: cspHeader,
+          url: hop.url,
+        },
+        remediation: "Consider adding base-uri 'self' (or 'none').",
+      });
+    }
   }
 
   const contentTypeOptions = headerValue(hop, 'x-content-type-options');

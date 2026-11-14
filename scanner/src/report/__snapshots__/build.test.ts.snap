@@ -167,7 +167,7 @@ exports[`buildReport > matches a snapshot 1`] = `
       {
         "cookies": [],
         "headers": {
-          "content-security-policy": "default-src 'self'; frame-ancestors 'none'",
+          "content-security-policy": "default-src 'self'; base-uri 'self'; frame-ancestors 'none'",
           "referrer-policy": "strict-origin-when-cross-origin",
           "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
           "x-content-type-options": "nosniff",

@@ -14,6 +14,8 @@
 | [HTTP-010](HTTP-010.md)     | low               | Content-Security-Policy observed with weak script sources            |
 | [HTTP-011](HTTP-011.md)     | informational     | Strict-Transport-Security observed without includeSubDomains         |
 | [HTTP-012](HTTP-012.md)     | informational     | Strict-Transport-Security observed without preload                   |
+| [HTTP-013](HTTP-013.md)     | informational     | Content-Security-Policy observed without an object-src restriction   |
+| [HTTP-014](HTTP-014.md)     | informational     | Content-Security-Policy observed without a base-uri directive        |
 | [COOKIE-001](COOKIE-001.md) | low               | Cookie flag not observed: Secure                                     |
 | [COOKIE-002](COOKIE-002.md) | low               | Cookie flag not observed: HttpOnly                                   |
 | [COOKIE-003](COOKIE-003.md) | low               | Cookie flag not observed: SameSite                                   |

@@ -102,6 +102,21 @@ export const RULE_CATALOG: readonly CatalogEntry[] = [
     summary: 'The Strict-Transport-Security header has no preload directive.',
   },
   {
+    id: 'HTTP-013',
+    area: 'http',
+    title: 'Content-Security-Policy observed without an object-src restriction',
+    severities: ['informational'],
+    summary:
+      'The Content-Security-Policy has no object-src directive and no default-src to fall back on.',
+  },
+  {
+    id: 'HTTP-014',
+    area: 'http',
+    title: 'Content-Security-Policy observed without a base-uri directive',
+    severities: ['informational'],
+    summary: 'The Content-Security-Policy has no base-uri directive.',
+  },
+  {
     id: 'COOKIE-001',
     area: 'cookie',
     title: 'Cookie flag not observed: Secure',
