@@ -3,6 +3,7 @@ import { Command } from 'commander';
 import { resolveTarget, type ResolveResult } from '@sentinel/core';
 import {
   buildReport,
+  RULE_CATALOG,
   DEFAULT_PORTS,
   evaluate,
   fetchHttp,
@@ -22,6 +23,7 @@ import {
 import { decideExitCode, ExitCode } from './exit-codes.js';
 import { DEFAULT_FAIL_ON, hasFindingsAtOrAbove, parseFailOn } from './fail-on.js';
 import { formatTerminal, sanitize } from './format.js';
+import { formatRuleList } from './format-rules.js';
 import { formatHtml } from './format-html.js';
 import { formatMarkdown } from './format-markdown.js';
 import { logger } from './logger.js';
@@ -278,6 +280,15 @@ program
         `${report.findings.length} finding(s), ${report.errors.length} check error(s).`,
     );
     process.exitCode = ExitCode.Clean;
+  });
+
+program
+  .command('rules')
+  .description('Show the rules Sentinel checks')
+  .command('list')
+  .description('List every rule with its ID, severity and finding title')
+  .action(() => {
+    console.log(formatRuleList(RULE_CATALOG));
   });
 
 await program.parseAsync();
