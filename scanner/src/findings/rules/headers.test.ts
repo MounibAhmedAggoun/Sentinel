@@ -122,7 +122,7 @@ describe('headerRules', () => {
       ids(
         scanWithHeaders({
           ...CLEAN_HEADERS,
-          'strict-transport-security': 'max-age=15552000; includeSubDomains',
+          'strict-transport-security': 'max-age=15552000; includeSubDomains; preload',
         }),
       ),
     ).toEqual([]);
@@ -130,8 +130,54 @@ describe('headerRules', () => {
 
   it('accepts a quoted HSTS max-age', () => {
     expect(
-      ids(scanWithHeaders({ ...CLEAN_HEADERS, 'strict-transport-security': 'max-age="31536000"' })),
+      ids(
+        scanWithHeaders({
+          ...CLEAN_HEADERS,
+          'strict-transport-security': 'max-age="31536000"; includeSubDomains; preload',
+        }),
+      ),
     ).toEqual([]);
+  });
+
+  it('notes HSTS without includeSubDomains', () => {
+    const findings = headerRules(
+      scanWithHeaders({
+        ...CLEAN_HEADERS,
+        'strict-transport-security': 'max-age=31536000; preload',
+      }),
+    );
+
+    expect(findings.map((f) => f.ruleId)).toEqual([RULE_IDS.HTTP_HSTS_NO_INCLUDE_SUBDOMAINS]);
+    expect(findings[0]?.severity).toBe('informational');
+  });
+
+  it('notes HSTS without preload', () => {
+    const findings = headerRules(
+      scanWithHeaders({
+        ...CLEAN_HEADERS,
+        'strict-transport-security': 'max-age=31536000; includeSubDomains',
+      }),
+    );
+
+    expect(findings.map((f) => f.ruleId)).toEqual([RULE_IDS.HTTP_HSTS_NO_PRELOAD]);
+    expect(findings[0]?.severity).toBe('informational');
+  });
+
+  it('matches directive names in any letter case', () => {
+    expect(
+      ids(
+        scanWithHeaders({
+          ...CLEAN_HEADERS,
+          'strict-transport-security': 'max-age=31536000; INCLUDESUBDOMAINS; Preload',
+        }),
+      ),
+    ).toEqual([]);
+  });
+
+  it('reports a short max-age once and adds no directive findings', () => {
+    expect(
+      ids(scanWithHeaders({ ...CLEAN_HEADERS, 'strict-transport-security': 'max-age=300' })),
+    ).toEqual([RULE_IDS.HTTP_HSTS_WEAK]);
   });
 
   it('does not judge HSTS strength on a plain HTTP response', () => {

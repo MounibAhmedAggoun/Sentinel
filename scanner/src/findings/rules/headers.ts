@@ -82,6 +82,40 @@ export const headerRules: Rule = (scan) => {
     }
   }
 
+  // HSTS directives. Judged only when max-age is already long enough, so a short
+  // max-age is reported once (HTTP-009) instead of stacking more findings on it.
+  if (hsts !== null) {
+    const ageMatch = /(?:^|;)\s*max-age\s*=\s*"?(\d+)"?/i.exec(hsts);
+    const age = ageMatch?.[1] !== undefined ? Number(ageMatch[1]) : null;
+    if (age !== null && age >= 180 * 24 * 60 * 60) {
+      const directives = hsts.split(';').map((d) => d.trim().toLowerCase());
+
+      if (!directives.includes('includesubdomains')) {
+        findings.push({
+          ruleId: RULE_IDS.HTTP_HSTS_NO_INCLUDE_SUBDOMAINS,
+          title: 'Strict-Transport-Security observed without includeSubDomains',
+          severity: 'informational',
+          description: `The Strict-Transport-Security header observed at ${hop.url} has no includeSubDomains directive, so browsers apply it to this host only and not to its subdomains.`,
+          evidence: { header: 'Strict-Transport-Security', value: hsts, url: hop.url },
+          remediation:
+            'If every subdomain works over HTTPS, consider adding includeSubDomains. Leave it out if some subdomains do not.',
+        });
+      }
+
+      if (!directives.includes('preload')) {
+        findings.push({
+          ruleId: RULE_IDS.HTTP_HSTS_NO_PRELOAD,
+          title: 'Strict-Transport-Security observed without preload',
+          severity: 'informational',
+          description: `The Strict-Transport-Security header observed at ${hop.url} has no preload directive, so the site is not eligible for browser preload lists. Preloading is optional and is a long-term commitment.`,
+          evidence: { header: 'Strict-Transport-Security', value: hsts, url: hop.url },
+          remediation:
+            'Consider preload only if the whole site and all subdomains will stay on HTTPS, since removal from preload lists is slow.',
+        });
+      }
+    }
+  }
+
   // CSP observed but allowing weak script sources. Uses script-src, or default-src as the fallback.
   const cspHeader = headerValue(hop, 'content-security-policy');
   if (cspHeader !== null) {

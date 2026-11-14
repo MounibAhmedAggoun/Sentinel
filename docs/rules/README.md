@@ -12,6 +12,8 @@
 | [HTTP-008](HTTP-008.md)     | low               | Redirect from HTTP to HTTPS not observed                             |
 | [HTTP-009](HTTP-009.md)     | low               | Strict-Transport-Security observed with a short or missing max-age   |
 | [HTTP-010](HTTP-010.md)     | low               | Content-Security-Policy observed with weak script sources            |
+| [HTTP-011](HTTP-011.md)     | informational     | Strict-Transport-Security observed without includeSubDomains         |
+| [HTTP-012](HTTP-012.md)     | informational     | Strict-Transport-Security observed without preload                   |
 | [COOKIE-001](COOKIE-001.md) | low               | Cookie flag not observed: Secure                                     |
 | [COOKIE-002](COOKIE-002.md) | low               | Cookie flag not observed: HttpOnly                                   |
 | [COOKIE-003](COOKIE-003.md) | low               | Cookie flag not observed: SameSite                                   |

@@ -980,4 +980,79 @@ listen_addresses = 'localhost'`,
       },
     ],
   },
+  'HTTP-011': {
+    why: 'Without includeSubDomains, the Strict-Transport-Security header applies to the host that sent it and not to its subdomains. A browser then treats a subdomain as an ordinary site, so a first visit to it can still start over plain HTTP. Adding the directive extends the HTTPS-only rule to every subdomain.',
+    falsePositives:
+      'Leaving it out is correct when some subdomains do not work over HTTPS, because browsers would refuse to load them. Adding it is a commitment for the whole max-age, so it should wait until every subdomain, including old or internal ones, serves HTTPS. Sentinel reads one response, and judges this only when max-age is already at least 180 days.',
+    fixes: [
+      {
+        server: 'nginx',
+        snippet: `add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;`,
+      },
+      {
+        server: 'Apache',
+        snippet: `# Needs mod_headers.
+Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"`,
+      },
+      {
+        server: 'Caddy',
+        snippet: `header Strict-Transport-Security "max-age=31536000; includeSubDomains"`,
+      },
+      {
+        server: 'Express',
+        snippet: `app.use((req, res, next) => {
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  next();
+});`,
+      },
+    ],
+    references: [
+      {
+        title: 'MDN: Strict-Transport-Security',
+        url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security',
+      },
+      {
+        title: 'RFC 6797: HTTP Strict Transport Security',
+        url: 'https://datatracker.ietf.org/doc/html/rfc6797',
+      },
+    ],
+  },
+
+  'HTTP-012': {
+    why: 'The preload directive signals that the site wants to be included in the HSTS preload lists that browsers ship with. A site on those lists is treated as HTTPS-only even on the very first visit, before the browser has seen the header. Without the directive, that first visit is not covered.',
+    falsePositives:
+      'Preloading is optional and is a long-term commitment. It normally needs a long max-age and includeSubDomains, and getting removed from the lists later is slow. Many well-run sites leave it out on purpose, which is why this is informational. Sentinel only sees the header. It cannot tell whether the site is already on a preload list. It judges this only when max-age is already at least 180 days.',
+    fixes: [
+      {
+        server: 'nginx',
+        snippet: `add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;`,
+      },
+      {
+        server: 'Apache',
+        snippet: `# Needs mod_headers.
+Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"`,
+      },
+      {
+        server: 'Caddy',
+        snippet: `header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"`,
+      },
+      {
+        server: 'Express',
+        snippet: `app.use((req, res, next) => {
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  next();
+});`,
+      },
+    ],
+    references: [
+      {
+        title: 'MDN: Strict-Transport-Security',
+        url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security',
+      },
+      {
+        title: 'HSTS Preload List',
+        url: 'https://hstspreload.org/',
+      },
+    ],
+  },
 };

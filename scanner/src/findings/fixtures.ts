@@ -3,7 +3,7 @@ import type { ScanResult } from './types.js';
 /** A response with every security header present. */
 export const CLEAN_HEADERS: Record<string, string | string[]> = {
   'content-security-policy': "default-src 'self'; frame-ancestors 'none'",
-  'strict-transport-security': 'max-age=31536000; includeSubDomains',
+  'strict-transport-security': 'max-age=31536000; includeSubDomains; preload',
   'x-content-type-options': 'nosniff',
   'x-frame-options': 'DENY',
   'referrer-policy': 'strict-origin-when-cross-origin',

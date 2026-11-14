@@ -88,6 +88,20 @@ export const RULE_CATALOG: readonly CatalogEntry[] = [
       'The script sources in the Content-Security-Policy include unsafe-inline, unsafe-eval or a bare wildcard.',
   },
   {
+    id: 'HTTP-011',
+    area: 'http',
+    title: 'Strict-Transport-Security observed without includeSubDomains',
+    severities: ['informational'],
+    summary: 'The Strict-Transport-Security header has no includeSubDomains directive.',
+  },
+  {
+    id: 'HTTP-012',
+    area: 'http',
+    title: 'Strict-Transport-Security observed without preload',
+    severities: ['informational'],
+    summary: 'The Strict-Transport-Security header has no preload directive.',
+  },
+  {
     id: 'COOKIE-001',
     area: 'cookie',
     title: 'Cookie flag not observed: Secure',
