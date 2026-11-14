@@ -241,6 +241,21 @@ export const RULE_CATALOG: readonly CatalogEntry[] = [
     summary: 'The SPF record ends in ?all, or has neither an all mechanism nor a redirect.',
   },
   {
+    id: 'DNS-007',
+    area: 'dns',
+    title: 'More than one SPF record observed',
+    severities: ['low'],
+    summary: 'The TXT records of the scanned name contain more than one SPF record.',
+  },
+  {
+    id: 'DNS-008',
+    area: 'dns',
+    title: 'SPF record observed with more than 10 DNS lookups',
+    severities: ['low'],
+    summary:
+      'The SPF record has more than 10 mechanisms that need a DNS lookup. Included records are not followed.',
+  },
+  {
     id: 'TCP-001',
     area: 'tcp',
     title: 'TCP port <port> observed open',

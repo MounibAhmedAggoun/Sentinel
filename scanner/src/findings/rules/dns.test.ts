@@ -156,3 +156,55 @@ describe('dnsRules: wording', () => {
     }
   });
 });
+
+describe('dnsRules: SPF record count and lookup limit', () => {
+  const spf = (raw: string): Partial<DnsResult> => ({
+    spf: { raw, all: '-all' },
+    txt: { ok: true, records: [raw] },
+  });
+  const includes = (count: number): string =>
+    Array.from({ length: count }, (_, i) => `include:s${i}.example.net`).join(' ');
+
+  it('notes more than one SPF record', () => {
+    const findings = dnsRules(
+      withDns({
+        txt: { ok: true, records: ['v=spf1 -all', 'v=spf1 include:_spf.example.net ~all'] },
+      }),
+    );
+
+    expect(findings.map((f) => f.ruleId)).toEqual([RULE_IDS.DNS_SPF_MULTIPLE_RECORDS]);
+    expect(findings[0]).toMatchObject({ severity: 'low', evidence: { count: 2 } });
+  });
+
+  it('does not judge the record count when the TXT lookup failed', () => {
+    expect(ids(withDns({ txt: TIMEOUT }))).toEqual([]);
+  });
+
+  it('accepts exactly 10 lookup mechanisms', () => {
+    expect(ids(withDns(spf(`v=spf1 ${includes(10)} -all`)))).toEqual([]);
+  });
+
+  it('notes more than 10 lookup mechanisms', () => {
+    const findings = dnsRules(withDns(spf(`v=spf1 ${includes(11)} -all`)));
+
+    expect(findings.map((f) => f.ruleId)).toEqual([RULE_IDS.DNS_SPF_TOO_MANY_LOOKUPS]);
+    expect(findings[0]).toMatchObject({
+      severity: 'low',
+      evidence: { lookupMechanisms: 11, limit: 10 },
+    });
+  });
+
+  it('counts a, mx, qualified and domain-specific forms', () => {
+    const raw =
+      'v=spf1 a mx a:mail.example.com mx:mail.example.com ~include:s0.example.net ' +
+      `${includes(7).replace('include:s0.example.net ', '')} -all`;
+
+    expect(ids(withDns(spf(raw)))).toEqual([RULE_IDS.DNS_SPF_TOO_MANY_LOOKUPS]);
+  });
+
+  it('does not count ip4, ip6 or all as lookups', () => {
+    const raw = `v=spf1 ${includes(10)} ip4:192.0.2.0/24 ip6:2001:db8::/32 -all`;
+
+    expect(ids(withDns(spf(raw)))).toEqual([]);
+  });
+});

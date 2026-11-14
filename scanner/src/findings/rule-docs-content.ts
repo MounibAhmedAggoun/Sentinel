@@ -1132,4 +1132,45 @@ Header always set Content-Security-Policy "default-src 'self'; base-uri 'self'"`
       },
     ],
   },
+  'DNS-007': {
+    why: 'A domain may publish only one SPF record. When the TXT records of a name contain two or more, the SPF standard treats it as a permanent error, and receivers may fail every SPF check for that domain, including mail from senders that were meant to be allowed. It often happens when a second service asks for its own record and it is added next to the first one.',
+    falsePositives:
+      'Sentinel counts TXT values that start with v=spf1 at the scanned name. A TXT record split into several strings is joined by the resolver, so it counts as one. The records are read from one lookup, and a stale answer from a resolver cache can show a record that was already removed. Receivers differ in how they handle the error.',
+    fixes: [
+      {
+        server: 'DNS zone',
+        snippet: `; Two records at the same name, which is the error:
+;   example.com.  IN  TXT  "v=spf1 include:_spf.example.net ~all"
+;   example.com.  IN  TXT  "v=spf1 include:mail.example.org ~all"
+; Replace them with one record that combines the mechanisms:
+example.com.  IN  TXT  "v=spf1 include:_spf.example.net include:mail.example.org ~all"`,
+      },
+    ],
+    references: [
+      {
+        title: 'RFC 7208: Sender Policy Framework (SPF)',
+        url: 'https://datatracker.ietf.org/doc/html/rfc7208',
+      },
+    ],
+  },
+
+  'DNS-008': {
+    why: 'The SPF standard allows at most 10 mechanisms that need a DNS lookup while a record is evaluated. The terms include, a, mx, ptr, exists and redirect each count. A record that goes over the limit is a permanent error, and receivers may fail SPF checks for the domain. A long list of included senders reaches the limit quickly.',
+    falsePositives:
+      'Sentinel counts only the terms written in the record it fetched. It does not follow include or redirect targets, so the real total can be higher than the number it reports, and a record under the limit here can still go over it once the included records are expanded. Some receivers apply a different limit. The lookups of a, mx and include are counted together, but nested ones are not counted here.',
+    fixes: [
+      {
+        server: 'DNS zone',
+        snippet: `; Replace includes of senders you no longer use, and where a sender has
+; fixed addresses, list them directly. ip4 and ip6 need no lookup.
+example.com.  IN  TXT  "v=spf1 ip4:192.0.2.0/24 ip6:2001:db8::/32 include:_spf.example.net ~all"`,
+      },
+    ],
+    references: [
+      {
+        title: 'RFC 7208: Sender Policy Framework (SPF)',
+        url: 'https://datatracker.ietf.org/doc/html/rfc7208',
+      },
+    ],
+  },
 };

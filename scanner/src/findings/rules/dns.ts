@@ -76,6 +76,55 @@ export const dnsRules: Rule = (scan) => {
     }
   }
 
+  // More than one SPF record is a permanent error under the SPF standard.
+  if (dns.txt.ok) {
+    const spfRecords = dns.txt.records.filter((r) => /^v=spf1(\s|$)/i.test(r.trim()));
+    if (spfRecords.length > 1) {
+      findings.push({
+        ruleId: RULE_IDS.DNS_SPF_MULTIPLE_RECORDS,
+        title: 'More than one SPF record observed',
+        severity: 'low',
+        description: `${spfRecords.length} SPF records were observed in the TXT records for ${dns.hostname}. A name may have only one, and receivers may treat several as a permanent error, so SPF checks for this domain may fail.`,
+        evidence: {
+          hostname: dns.hostname,
+          count: spfRecords.length,
+          records: spfRecords.map((r) => r.slice(0, 200)),
+        },
+        remediation:
+          'Merge the records into one SPF record, combining their mechanisms, and remove the others.',
+      });
+    }
+  }
+
+  // SPF allows at most 10 mechanisms that need a DNS lookup. Only the record itself
+  // is counted here: included records are not followed, so the real total can be higher.
+  if (dns.spf !== null) {
+    const lookupTerms = dns.spf.raw
+      .trim()
+      .split(/\s+/)
+      .slice(1)
+      .filter(
+        (term) =>
+          /^[+\-~?]?(include|a|mx|ptr|exists)(?=[:/]|$)/i.test(term) || /^redirect=/i.test(term),
+      );
+    if (lookupTerms.length > 10) {
+      findings.push({
+        ruleId: RULE_IDS.DNS_SPF_TOO_MANY_LOOKUPS,
+        title: 'SPF record observed with more than 10 DNS lookups',
+        severity: 'low',
+        description: `The SPF record for ${dns.hostname} has ${lookupTerms.length} mechanisms that need a DNS lookup, and the SPF standard allows at most 10. Receivers may treat the record as a permanent error. Included records were not followed, so the real total can be higher.`,
+        evidence: {
+          hostname: dns.hostname,
+          lookupMechanisms: lookupTerms.length,
+          limit: 10,
+          raw: dns.spf.raw.slice(0, 200),
+        },
+        remediation:
+          'Reduce the number of include, a, mx, ptr, exists and redirect terms, for example by removing unused senders or replacing includes with ip4 or ip6 ranges.',
+      });
+    }
+  }
+
   // DMARC lives at _dmarc.<hostname>.
   if (dns.dmarc === null) {
     if (answered(dns.dmarcTxt)) {
