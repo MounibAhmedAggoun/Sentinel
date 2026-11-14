@@ -91,6 +91,8 @@ never as a finding.
 | `--ports <list>`           | Ports to check, from the allowlist, e.g. `80,443`                                    |
 | `--format <name>`          | Print `table` (default), `markdown` or `html`                                        |
 | `--fail-on <severity>`     | Exit 1 on a finding at or above `informational`, `low` (default), `medium` or `high` |
+| `--only <rules>`           | Report only these rules, e.g. `HTTP-001,TLS-002`                                     |
+| `--skip <rules>`           | Leave these rules out of the report, e.g. `DNS-003`                                  |
 | `--json <file>`            | Also write the full report to a JSON file                                            |
 | `--max-duration <seconds>` | Stop the scan after this long (1 to 3600, default 120)                               |
 | `--timeout <seconds>`      | Limit for each HTTP request, TCP connection and TLS handshake (1 to 60)              |
@@ -101,6 +103,13 @@ never as a finding.
 Exit codes: `0` clean, `1` findings at or above the `--fail-on` severity (default
 `low`), `2` usage error, `3` scan error (including a scan that exceeds
 `--max-duration`).
+
+`--only` and `--skip` choose which findings are reported. The scan still runs every
+check, and the two options cannot be used together. To see every rule and its ID:
+
+```bash
+node cli/dist/index.js rules list
+```
 
 ## Safety model
 
