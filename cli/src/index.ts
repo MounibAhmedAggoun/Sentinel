@@ -29,6 +29,7 @@ import { formatMarkdown } from './format-markdown.js';
 import { logger } from './logger.js';
 import { countFailedModules } from './module-failures.js';
 import { parseFormat } from './output-format.js';
+import { filterFindings, parseRuleList } from './rule-filter.js';
 import { parseTimeout } from './timeout.js';
 import { targetSchema } from './validate.js';
 import { validateReportFile } from './validate-report.js';
@@ -54,6 +55,8 @@ program
     'exit with code 1 when a finding is at or above this severity: informational, low, medium, high',
     DEFAULT_FAIL_ON,
   )
+  .option('--only <rules>', 'report only these rules, e.g. HTTP-001,TLS-002')
+  .option('--skip <rules>', 'leave these rules out of the report, e.g. DNS-003')
   .option('--allow-private', 'allow private/internal addresses (local testing only)', false)
   .option(
     '--probe-legacy-tls',
@@ -78,6 +81,8 @@ program
         json?: string;
         format: string;
         failOn: string;
+        only?: string;
+        skip?: string;
         allowPrivate: boolean;
         probeLegacyTls: boolean;
         maxDuration: string;
@@ -117,6 +122,32 @@ program
           logger.error({ reason: failOn.error }, 'invalid fail-on');
           process.exitCode = ExitCode.Usage;
           return;
+        }
+
+        if (options.only !== undefined && options.skip !== undefined) {
+          logger.error({ reason: 'use either --only or --skip, not both' }, 'invalid rule filter');
+          process.exitCode = ExitCode.Usage;
+          return;
+        }
+        const knownRules = RULE_CATALOG.map((entry) => entry.id);
+        let ruleFilter: { only?: string[]; skip?: string[] } = {};
+        if (options.only !== undefined) {
+          const only = parseRuleList(options.only, knownRules);
+          if (!only.ok) {
+            logger.error({ reason: only.error }, 'invalid --only');
+            process.exitCode = ExitCode.Usage;
+            return;
+          }
+          ruleFilter = { only: only.ids };
+        }
+        if (options.skip !== undefined) {
+          const skip = parseRuleList(options.skip, knownRules);
+          if (!skip.ok) {
+            logger.error({ reason: skip.error }, 'invalid --skip');
+            process.exitCode = ExitCode.Usage;
+            return;
+          }
+          ruleFilter = { skip: skip.ids };
         }
 
         const duration = parseMaxDuration(options.maxDuration);
@@ -205,7 +236,8 @@ program
         );
 
         const scan = { target, dns, http, httpPlain, tcp, tls };
-        const findings = evaluate(scan);
+        // The scan always runs every check. --only and --skip choose what is reported.
+        const findings = filterFindings(evaluate(scan), ruleFilter);
 
         const report = buildReport({
           scan,
