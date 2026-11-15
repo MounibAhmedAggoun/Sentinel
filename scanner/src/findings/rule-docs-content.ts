@@ -183,4 +183,204 @@ Header always set Referrer-Policy "strict-origin-when-cross-origin"`,
       },
     ],
   },
+  'HTTP-006': {
+    why: 'The Server header sometimes names the web server software together with its version. Knowing the exact version lets someone look up issues that were published for it, so removing the version detail gives away less. Keeping the software up to date matters more than hiding the version.',
+    falsePositives:
+      'The rule matches version-like text such as 2.4 or 1.18, not a confirmed software version, so a value that merely looks like a version can match. The header may come from a proxy or CDN in front of the server rather than from the origin server. Hiding the version does not change which version is running.',
+    fixes: [
+      {
+        server: 'nginx',
+        snippet: `# In the http block.
+server_tokens off;`,
+      },
+      {
+        server: 'Apache',
+        snippet: `# In the main server configuration, not in .htaccess.
+ServerTokens Prod
+ServerSignature Off`,
+      },
+      {
+        server: 'Caddy',
+        snippet: `# Inside the site block.
+header -Server`,
+      },
+    ],
+    references: [
+      {
+        title: 'nginx: server_tokens',
+        url: 'https://nginx.org/en/docs/http/ngx_http_core_module.html#server_tokens',
+      },
+      {
+        title: 'Apache: ServerTokens',
+        url: 'https://httpd.apache.org/docs/current/mod/core.html#servertokens',
+      },
+    ],
+  },
+
+  'HTTP-007': {
+    why: 'The X-Powered-By header is often added by an application framework and names it, sometimes with a version. It tells an outside observer which technology is in use and can help them look up issues for that exact version. Keeping the software up to date matters more than hiding the header.',
+    falsePositives:
+      'The rule matches version-like text, so a value that only looks like a version can match. The header may be added by a layer in front of the application. Removing the header does not change what software is running.',
+    fixes: [
+      {
+        server: 'nginx',
+        snippet: `# Hides the header when it comes from a proxied application.
+proxy_hide_header X-Powered-By;
+# For FastCGI backends such as PHP-FPM:
+# fastcgi_hide_header X-Powered-By;`,
+      },
+      {
+        server: 'Apache',
+        snippet: `# Needs mod_headers.
+Header always unset X-Powered-By`,
+      },
+      {
+        server: 'Caddy',
+        snippet: `header -X-Powered-By`,
+      },
+      {
+        server: 'Express',
+        snippet: `app.disable('x-powered-by');`,
+      },
+    ],
+    references: [
+      {
+        title: 'Express: Production best practices (security)',
+        url: 'https://expressjs.com/en/advanced/best-practice-security.html',
+      },
+    ],
+  },
+
+  'HTTP-008': {
+    why: 'A visitor who types a plain http:// address, or follows an old http:// link, reaches the site over an unencrypted connection first. If the server answers there without redirecting to HTTPS, the visitor can stay on plain HTTP. A redirect moves them to HTTPS, and an HSTS header then keeps later visits on HTTPS.',
+    falsePositives:
+      'Sentinel makes a separate request to the http:// address and follows redirects. The rule applies only when that request got a response and the last response was still plain HTTP. A host that does not answer on port 80 is skipped rather than judged. A service that is meant to be plain HTTP only, such as an internal tool, can match without being a problem.',
+    fixes: [
+      {
+        server: 'nginx',
+        snippet: `server {
+    listen 80;
+    server_name example.com www.example.com;
+    return 301 https://$host$request_uri;
+}`,
+      },
+      {
+        server: 'Apache',
+        snippet: `<VirtualHost *:80>
+    ServerName example.com
+    ServerAlias www.example.com
+    Redirect permanent / https://example.com/
+</VirtualHost>`,
+      },
+      {
+        server: 'Caddy',
+        snippet: `# Caddy redirects HTTP to HTTPS by default for a site with a hostname.
+# This makes it explicit:
+http://example.com {
+    redir https://example.com{uri} permanent
+}`,
+      },
+      {
+        server: 'Express',
+        snippet: `// Needs app.set('trust proxy', 1) when behind a proxy, so req.secure is correct.
+app.use((req, res, next) => {
+  if (req.secure) return next();
+  res.redirect(301, 'https://example.com' + req.originalUrl);
+});`,
+      },
+    ],
+    references: [
+      {
+        title: 'MDN: Redirections in HTTP',
+        url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections',
+      },
+    ],
+  },
+
+  'HTTP-009': {
+    why: 'Strict-Transport-Security tells a browser to use HTTPS only for the length of its max-age. A short max-age means the browser forgets the instruction sooner, and a header with no max-age value may be ignored by browsers. A longer value keeps visitors on HTTPS for longer between visits.',
+    falsePositives:
+      'A max-age of 0 is sometimes set on purpose, to make browsers forget an earlier HSTS setting while a site is being moved back to HTTP. A short value is also a reasonable choice while HSTS is being rolled out. Sentinel flags values below 180 days and reads one response only.',
+    fixes: [
+      {
+        server: 'nginx',
+        snippet: `add_header Strict-Transport-Security "max-age=31536000" always;`,
+      },
+      {
+        server: 'Apache',
+        snippet: `# Needs mod_headers.
+Header always set Strict-Transport-Security "max-age=31536000"`,
+      },
+      {
+        server: 'Caddy',
+        snippet: `header Strict-Transport-Security "max-age=31536000"`,
+      },
+      {
+        server: 'Express',
+        snippet: `app.use((req, res, next) => {
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000');
+  next();
+});`,
+      },
+    ],
+    references: [
+      {
+        title: 'MDN: Strict-Transport-Security',
+        url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security',
+      },
+      {
+        title: 'RFC 6797: HTTP Strict Transport Security',
+        url: 'https://datatracker.ietf.org/doc/html/rfc6797',
+      },
+    ],
+  },
+
+  'HTTP-010': {
+    why: 'A Content-Security-Policy limits where scripts may come from. Sources such as unsafe-inline, unsafe-eval or a bare * widen what the policy allows, so a script injected into a page may still be permitted to run. The policy is then present, but it gives less protection against cross-site scripting.',
+    falsePositives:
+      'Sentinel reads script-src, or default-src when script-src is absent. It ignores unsafe-inline when a nonce, a hash or strict-dynamic is also present, because browsers ignore it then. A policy set through a meta tag, or one sent only on some responses, is not seen. A site may accept these sources for a time while it moves to nonces or hashes.',
+    fixes: [
+      {
+        server: 'nginx',
+        snippet: `# Static hash of an inline script. Replace the placeholder with the real hash.
+# A per-request nonce needs the application to generate it.
+add_header Content-Security-Policy "script-src 'self' 'sha256-REPLACE_WITH_HASH'" always;`,
+      },
+      {
+        server: 'Apache',
+        snippet: `# Needs mod_headers.
+Header always set Content-Security-Policy "script-src 'self' 'sha256-REPLACE_WITH_HASH'"`,
+      },
+      {
+        server: 'Caddy',
+        snippet: `header Content-Security-Policy "script-src 'self' 'sha256-REPLACE_WITH_HASH'"`,
+      },
+      {
+        server: 'Express',
+        snippet: `import crypto from 'node:crypto';
+
+app.use((req, res, next) => {
+  const nonce = crypto.randomBytes(16).toString('base64');
+  res.locals.nonce = nonce;
+  res.setHeader('Content-Security-Policy', "script-src 'self' 'nonce-" + nonce + "'");
+  next();
+});
+// In a template: <script nonce="...the value of res.locals.nonce...">`,
+      },
+    ],
+    references: [
+      {
+        title: 'MDN: Content-Security-Policy',
+        url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy',
+      },
+      {
+        title: 'MDN: script-src',
+        url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/script-src',
+      },
+      {
+        title: 'CSP Evaluator',
+        url: 'https://csp-evaluator.withgoogle.com/',
+      },
+    ],
+  },
 };
