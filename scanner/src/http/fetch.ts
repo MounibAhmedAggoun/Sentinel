@@ -51,19 +51,29 @@ export async function fetchHttp(startUrl: string, options: FetchOptions = {}): P
     if (!target.allowed) {
       return fail(result, { code: 'BLOCKED_TARGET', message: target.reason });
     }
-    const ip = target.ips[0];
-    if (ip === undefined) {
+    if (target.ips.length === 0) {
       return fail(result, { code: 'BLOCKED_TARGET', message: 'no usable IP address' });
     }
 
-    let response: RawResponse;
-    try {
-      response = await send(current, ip, { timeoutMs });
-    } catch (err) {
-      const e = err instanceof HttpRequestError ? err : null;
+    // Try each validated address in order. Only a refused connection or a
+    // timeout moves on to the next one. Any other error stops here.
+    let response: RawResponse | undefined;
+    let lastError: unknown;
+    for (const ip of target.ips) {
+      try {
+        response = await send(current, ip, { timeoutMs });
+        break;
+      } catch (err) {
+        lastError = err;
+        const code = err instanceof HttpRequestError ? err.code : 'UNKNOWN';
+        if (code !== 'CONNECTION_FAILED' && code !== 'TIMEOUT') break;
+      }
+    }
+    if (response === undefined) {
+      const e = lastError instanceof HttpRequestError ? lastError : null;
       return fail(result, {
         code: e?.code ?? 'UNKNOWN',
-        message: err instanceof Error ? err.message : 'unknown error',
+        message: lastError instanceof Error ? lastError.message : 'unknown error',
       });
     }
 

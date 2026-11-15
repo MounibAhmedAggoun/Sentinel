@@ -114,4 +114,40 @@ describe('fetchHttp against a local mock server', () => {
 
     expect(result.error?.code).toBe('CONNECTION_FAILED');
   });
+
+  it('falls back to the next address when the first one refuses the connection', async () => {
+    const second = http.createServer((_req, res) => {
+      res.writeHead(200, { server: 'second' });
+      res.end('ok');
+    });
+    await new Promise<void>((resolve) => second.listen(0, '127.0.0.2', resolve));
+    const port = (second.address() as AddressInfo).port;
+
+    try {
+      const result = await fetchHttp(`http://example.test:${port}/`, {
+        ...local,
+        timeoutMs: 2000,
+        resolve: () =>
+          Promise.resolve({
+            allowed: true as const,
+            hostname: 'example.test',
+            ips: ['127.0.0.1', '127.0.0.2'],
+          }),
+      });
+
+      expect(result.error).toBeNull();
+      expect(result.hops[0]?.remoteIp).toBe('127.0.0.2');
+    } finally {
+      second.closeAllConnections();
+      await new Promise<void>((resolve) => second.close(() => resolve()));
+    }
+  });
+
+  it('does not fall back after an HTTP error status', async () => {
+    const result = await fetchHttp(`${base}/missing`, { ...local, timeoutMs: 2000 });
+
+    expect(result.error).toBeNull();
+    expect(result.hops[0]?.status).toBe(404);
+    expect(result.hops).toHaveLength(1);
+  });
 });
