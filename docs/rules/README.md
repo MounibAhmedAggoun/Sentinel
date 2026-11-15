@@ -23,3 +23,9 @@
 | [TLS-005](TLS-005.md)       | medium            | Certificate not trusted by the system certificate store              |
 | [TLS-006](TLS-006.md)       | medium            | Outdated TLS protocol version accepted                               |
 | [TLS-007](TLS-007.md)       | informational     | TLS 1.3 not observed as supported                                    |
+| [DNS-001](DNS-001.md)       | low               | SPF record not observed                                              |
+| [DNS-002](DNS-002.md)       | low               | DMARC record not observed                                            |
+| [DNS-003](DNS-003.md)       | informational     | CAA record not observed                                              |
+| [DNS-004](DNS-004.md)       | medium            | SPF record observed that allows any sender                           |
+| [DNS-005](DNS-005.md)       | informational     | DMARC record observed with a monitoring-only policy                  |
+| [DNS-006](DNS-006.md)       | low               | SPF record observed without an enforcing policy                      |

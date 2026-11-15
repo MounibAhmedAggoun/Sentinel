@@ -779,4 +779,121 @@ example.com {
       },
     ],
   },
+  'DNS-001': {
+    why: 'SPF is a DNS record that lists which servers may send email for a domain. Receivers use it to spot forged mail. Without one, a receiver has no SPF information for the name, which matters most for domains that send or receive email.',
+    falsePositives:
+      'A name that never sends email, such as a host used only for a website, does not need an SPF record to work. Sentinel reads the TXT records of the scanned name only. A subdomain may send no mail while the organizational domain has a record. Sentinel skips this rule when the DNS server did not clearly answer, and for IP address targets.',
+    fixes: [
+      {
+        server: 'DNS zone (domain sends mail)',
+        snippet: `; List the servers that send mail. Replace the include with your provider.
+example.com.  IN  TXT  "v=spf1 include:_spf.example.net ~all"`,
+      },
+      {
+        server: 'DNS zone (domain sends no mail)',
+        snippet: `example.com.  IN  TXT  "v=spf1 -all"`,
+      },
+    ],
+    references: [
+      {
+        title: 'RFC 7208: Sender Policy Framework (SPF)',
+        url: 'https://datatracker.ietf.org/doc/html/rfc7208',
+      },
+    ],
+  },
+
+  'DNS-002': {
+    why: 'DMARC is a DNS record that tells receivers what to do with mail that fails SPF or DKIM checks, and where to send reports about it. Without one, receivers apply their own handling, and the domain owner gets no reports.',
+    falsePositives:
+      'Sentinel looks for a DMARC record at _dmarc.<name> and then at the organizational domain, so a subdomain that inherits the policy is not reported. A name that sends no mail may not need one. Sentinel skips this rule when the DNS server did not clearly answer, and for IP address targets.',
+    fixes: [
+      {
+        server: 'DNS zone',
+        snippet: `; Start with p=none to collect reports before enforcing anything.
+_dmarc.example.com.  IN  TXT  "v=DMARC1; p=none; rua=mailto:dmarc-reports@example.com"`,
+      },
+    ],
+    references: [
+      {
+        title: 'RFC 7489: DMARC',
+        url: 'https://datatracker.ietf.org/doc/html/rfc7489',
+      },
+    ],
+  },
+
+  'DNS-003': {
+    why: 'A CAA record lists which certificate authorities may issue certificates for a domain. Authorities check it before issuing, so it limits who can obtain a certificate for the name. Without one, any authority may issue.',
+    falsePositives:
+      'CAA is optional, and many sites work well without it, which is why this is informational. Sentinel checks the scanned name and its parent domains, and stops at the first record set it finds. Some DNS hosts do not support CAA records.',
+    fixes: [
+      {
+        server: 'DNS zone',
+        snippet: `; Allow only the authority you use. Letsencrypt.org is an example.
+example.com.  IN  CAA  0 issue "letsencrypt.org"`,
+      },
+    ],
+    references: [
+      {
+        title: 'RFC 8659: DNS Certification Authority Authorization (CAA)',
+        url: 'https://datatracker.ietf.org/doc/html/rfc8659',
+      },
+    ],
+  },
+
+  'DNS-004': {
+    why: 'An SPF record that ends in +all says that every server is allowed to send mail for the domain. That removes the point of SPF, because a receiver can no longer use it to tell real mail from forged mail.',
+    falsePositives:
+      'A +all ending is almost never intended. It can appear by mistake, for example from a template or a typo. Sentinel reads the final all mechanism of the record it found and does not follow include or redirect targets.',
+    fixes: [
+      {
+        server: 'DNS zone',
+        snippet: `; End the record with -all or ~all and list only the servers that send mail.
+example.com.  IN  TXT  "v=spf1 include:_spf.example.net -all"`,
+      },
+    ],
+    references: [
+      {
+        title: 'RFC 7208: Sender Policy Framework (SPF)',
+        url: 'https://datatracker.ietf.org/doc/html/rfc7208',
+      },
+    ],
+  },
+
+  'DNS-005': {
+    why: 'A DMARC policy of p=none asks receivers to take no action on mail that fails the checks, and only to send reports. It is a common first step, because the reports show which mail would be affected before anything is enforced.',
+    falsePositives:
+      'This is an expected state while DMARC is being rolled out, which is why it is informational. Some domains keep p=none on purpose. Sentinel cannot see whether reports are being read or whether a stricter policy is planned.',
+    fixes: [
+      {
+        server: 'DNS zone',
+        snippet: `; After the reports look clean, move to quarantine, then to reject.
+_dmarc.example.com.  IN  TXT  "v=DMARC1; p=quarantine; rua=mailto:dmarc-reports@example.com"`,
+      },
+    ],
+    references: [
+      {
+        title: 'RFC 7489: DMARC',
+        url: 'https://datatracker.ietf.org/doc/html/rfc7489',
+      },
+    ],
+  },
+
+  'DNS-006': {
+    why: 'An SPF record that ends in ?all, or that has neither an all mechanism nor a redirect, gives receivers no verdict for servers that are not listed. Mail from an unlisted server is then neither passed nor failed, so the record adds little protection.',
+    falsePositives:
+      'A neutral ending is sometimes used while SPF is being tested. A record with no all mechanism can be valid when it is meant to be combined with a redirect, and Sentinel checks for redirect= in the raw record. It does not follow include targets.',
+    fixes: [
+      {
+        server: 'DNS zone',
+        snippet: `; End the record with -all (fail) or ~all (soft fail).
+example.com.  IN  TXT  "v=spf1 include:_spf.example.net ~all"`,
+      },
+    ],
+    references: [
+      {
+        title: 'RFC 7208: Sender Policy Framework (SPF)',
+        url: 'https://datatracker.ietf.org/doc/html/rfc7208',
+      },
+    ],
+  },
 };
