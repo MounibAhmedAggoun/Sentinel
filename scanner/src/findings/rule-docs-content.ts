@@ -511,4 +511,272 @@ Header always edit Set-Cookie ^(.*)$ $1;Secure`,
       },
     ],
   },
+  'TLS-001': {
+    why: 'A certificate has an expiry date. After it passes, browsers show a full-page warning and many clients refuse to connect, so visitors cannot use the site normally.',
+    falsePositives:
+      'Sentinel compares the certificate date with the clock of the machine running the scan, so a wrong system clock can cause a false match. The server may also serve different certificates depending on the name or the IP address that was requested. Sentinel reads the certificate from one connection.',
+    fixes: [
+      {
+        server: 'nginx',
+        snippet: `# With certbot, renew and reload:
+sudo certbot renew
+sudo systemctl reload nginx
+# Check that automatic renewal works:
+sudo certbot renew --dry-run`,
+      },
+      {
+        server: 'Apache',
+        snippet: `sudo certbot renew
+sudo systemctl reload apache2
+# Check that automatic renewal works:
+sudo certbot renew --dry-run`,
+      },
+      {
+        server: 'Caddy',
+        snippet: `# Caddy obtains and renews certificates automatically for sites with a hostname.
+# If a certificate expired, check the logs for the reason renewal failed:
+journalctl -u caddy --no-pager | tail -n 50`,
+      },
+    ],
+    references: [
+      {
+        title: "Let's Encrypt: Documentation",
+        url: 'https://letsencrypt.org/docs/',
+      },
+      {
+        title: 'Certbot',
+        url: 'https://certbot.eff.org/',
+      },
+    ],
+  },
+
+  'TLS-002': {
+    why: 'A certificate that is close to its expiry date becomes an expired one if it is not renewed in time, and visitors then see browser warnings. A short remaining time is often the first sign that automatic renewal is not working.',
+    falsePositives:
+      'Some certificate authorities issue short-lived certificates on purpose, and renewal then happens close to the expiry date. A certificate with 25 days left can be normal for a setup that renews at 30 days. Sentinel uses the clock of the scanning machine and reads one certificate from one connection.',
+    fixes: [
+      {
+        server: 'nginx',
+        snippet: `# Check that automatic renewal works:
+sudo certbot renew --dry-run
+# List certificates and their expiry dates:
+sudo certbot certificates`,
+      },
+      {
+        server: 'Apache',
+        snippet: `sudo certbot renew --dry-run
+sudo certbot certificates`,
+      },
+      {
+        server: 'Caddy',
+        snippet: `# Caddy renews automatically. If a certificate is still near expiry,
+# look for renewal errors in the logs:
+journalctl -u caddy --no-pager | grep -i renew`,
+      },
+    ],
+    references: [
+      {
+        title: "Let's Encrypt: Documentation",
+        url: 'https://letsencrypt.org/docs/',
+      },
+      {
+        title: 'Certbot',
+        url: 'https://certbot.eff.org/',
+      },
+    ],
+  },
+
+  'TLS-003': {
+    why: 'A self-signed certificate is signed by its own key instead of by a certificate authority. Browsers and other clients have no reason to trust it, so they show a warning, and a visitor cannot tell it apart from a certificate that an attacker substituted.',
+    falsePositives:
+      'Self-signed certificates are expected on many internal services, development machines and test systems, and on devices that ship with one. Sentinel checks whether the subject and issuer match, so a certificate that is its own issuer by design is reported without being a mistake.',
+    fixes: [
+      {
+        server: 'nginx',
+        snippet: `# Replace the self-signed certificate with one from a trusted authority.
+# With certbot, for a public name:
+sudo certbot --nginx -d example.com -d www.example.com`,
+      },
+      {
+        server: 'Apache',
+        snippet: `sudo certbot --apache -d example.com -d www.example.com`,
+      },
+      {
+        server: 'Caddy',
+        snippet: `# Caddy uses a trusted authority by default for public hostnames.
+# A self-signed certificate usually means tls internal or a manual
+# certificate is configured. Remove it:
+example.com {
+    # tls internal   <- remove this line
+}`,
+      },
+    ],
+    references: [
+      {
+        title: "Let's Encrypt: Getting started",
+        url: 'https://letsencrypt.org/getting-started/',
+      },
+      {
+        title: 'Certbot',
+        url: 'https://certbot.eff.org/',
+      },
+    ],
+  },
+
+  'TLS-004': {
+    why: 'A certificate lists the names it is valid for. When the scanned name is not among them, browsers show a warning, because the certificate does not vouch for that site. It often means the wrong certificate is served for the name, for example from a default virtual host.',
+    falsePositives:
+      'A server can pick its certificate from the name the client asks for. Sentinel asks with the scanned hostname, but a load balancer or CDN may still answer differently for another path or client. If the site is also reached under another name, that name may be the one the certificate covers.',
+    fixes: [
+      {
+        server: 'nginx',
+        snippet: `server {
+    listen 443 ssl;
+    server_name example.com www.example.com;
+    ssl_certificate     /etc/letsencrypt/live/example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+}`,
+      },
+      {
+        server: 'Apache',
+        snippet: `<VirtualHost *:443>
+    ServerName example.com
+    ServerAlias www.example.com
+    SSLEngine on
+    SSLCertificateFile    /etc/letsencrypt/live/example.com/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/example.com/privkey.pem
+</VirtualHost>`,
+      },
+      {
+        server: 'Caddy',
+        snippet: `# List every name the site answers to. Caddy obtains a certificate for each.
+example.com, www.example.com {
+    respond "ok"
+}`,
+      },
+    ],
+    references: [
+      {
+        title: 'RFC 6125: Service identity in TLS certificates',
+        url: 'https://datatracker.ietf.org/doc/html/rfc6125',
+      },
+      {
+        title: 'MDN: Transport Layer Security',
+        url: 'https://developer.mozilla.org/en-US/docs/Web/Security/Transport_Layer_Security',
+      },
+    ],
+  },
+
+  'TLS-005': {
+    why: 'The scanning machine could not verify the certificate against its trusted root certificates. A common cause is a server that sends only its own certificate and not the intermediate certificate that links it to a trusted authority. Some clients can fetch the missing piece themselves, and others show an error.',
+    falsePositives:
+      'The verdict comes from the trust store of the machine that ran the scan, so a different system may reach a different result. A certificate from a private or internal authority is not trusted unless that authority is installed on the scanning machine. Sentinel reports this finding only when no more specific finding, such as expired, self-signed or hostname mismatch, already explains it.',
+    fixes: [
+      {
+        server: 'nginx',
+        snippet: `# Use the file that contains the leaf certificate and the intermediates.
+ssl_certificate     /etc/letsencrypt/live/example.com/fullchain.pem;
+ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;`,
+      },
+      {
+        server: 'Apache',
+        snippet: `# Use the full chain file as the certificate.
+SSLCertificateFile    /etc/letsencrypt/live/example.com/fullchain.pem
+SSLCertificateKeyFile /etc/letsencrypt/live/example.com/privkey.pem`,
+      },
+      {
+        server: 'Caddy',
+        snippet: `# Caddy sends the full chain for certificates it manages.
+# For a manual certificate, put the intermediates in the same file:
+tls /path/to/fullchain.pem /path/to/privkey.pem`,
+      },
+    ],
+    references: [
+      {
+        title: "Let's Encrypt: Chain of trust",
+        url: 'https://letsencrypt.org/docs/telling-browsers-which-certificate-chain-to-use/',
+      },
+      {
+        title: 'MDN: Transport Layer Security',
+        url: 'https://developer.mozilla.org/en-US/docs/Web/Security/Transport_Layer_Security',
+      },
+    ],
+  },
+
+  'TLS-006': {
+    why: 'TLS 1.0 and TLS 1.1 are old protocol versions with known weaknesses. The IETF formally deprecated them, and current browsers no longer use them. A server that still accepts them lets a client that supports nothing newer connect with weaker protection.',
+    falsePositives:
+      'This is checked only when Sentinel runs with --probe-legacy-tls. Sentinel tries a handshake pinned to each old version, and OpenSSL 3 may refuse old versions at its default security level, so the probe uses a lower level for those attempts only. An accepted handshake shows that the server allows the version, nothing more. A device that needs to serve old clients can accept it on purpose.',
+    fixes: [
+      {
+        server: 'nginx',
+        snippet: `ssl_protocols TLSv1.2 TLSv1.3;`,
+      },
+      {
+        server: 'Apache',
+        snippet: `SSLProtocol -all +TLSv1.2 +TLSv1.3`,
+      },
+      {
+        server: 'Caddy',
+        snippet: `# Caddy already allows TLS 1.2 and 1.3 only by default.
+# To state it explicitly:
+example.com {
+    tls {
+        protocols tls1.2 tls1.3
+    }
+}`,
+      },
+    ],
+    references: [
+      {
+        title: 'RFC 8996: Deprecating TLS 1.0 and TLS 1.1',
+        url: 'https://datatracker.ietf.org/doc/html/rfc8996',
+      },
+      {
+        title: 'nginx: ssl_protocols',
+        url: 'https://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_protocols',
+      },
+      {
+        title: 'Apache: SSLProtocol',
+        url: 'https://httpd.apache.org/docs/current/mod/mod_ssl.html#sslprotocol',
+      },
+    ],
+  },
+
+  'TLS-007': {
+    why: 'TLS 1.3 is the current protocol version. It removes older features that were a source of weaknesses and shortens the handshake. A server that does not accept it still works over TLS 1.2, which remains secure, so this is only a note.',
+    falsePositives:
+      'This is checked only when Sentinel runs with --probe-legacy-tls. A server whose software or library is too old to support TLS 1.3 matches, and so does one where TLS 1.3 was turned off on purpose. A failed probe can also come from a network problem rather than from missing support.',
+    fixes: [
+      {
+        server: 'nginx',
+        snippet: `# Needs nginx built with OpenSSL 1.1.1 or newer.
+ssl_protocols TLSv1.2 TLSv1.3;`,
+      },
+      {
+        server: 'Apache',
+        snippet: `# Needs Apache 2.4.36 or newer built with OpenSSL 1.1.1 or newer.
+SSLProtocol -all +TLSv1.2 +TLSv1.3`,
+      },
+      {
+        server: 'Caddy',
+        snippet: `# TLS 1.3 is enabled by default. If it was restricted, allow it again:
+example.com {
+    tls {
+        protocols tls1.2 tls1.3
+    }
+}`,
+      },
+    ],
+    references: [
+      {
+        title: 'RFC 8446: The Transport Layer Security protocol version 1.3',
+        url: 'https://datatracker.ietf.org/doc/html/rfc8446',
+      },
+      {
+        title: 'nginx: ssl_protocols',
+        url: 'https://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_protocols',
+      },
+    ],
+  },
 };
