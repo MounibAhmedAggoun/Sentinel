@@ -383,4 +383,132 @@ app.use((req, res, next) => {
       },
     ],
   },
+  'COOKIE-001': {
+    why: 'The Secure flag tells a browser to send a cookie only over HTTPS. A cookie set over HTTPS without it may also be sent over an unencrypted http:// connection, where someone on the network path could read it. This matters most for session cookies.',
+    falsePositives:
+      'Sentinel makes anonymous requests, so it only sees cookies the site sets before any login. It checks cookies set on HTTPS responses and keeps the first one seen for each name. A cookie that carries no sensitive value, such as a language preference, can match without being a problem.',
+    fixes: [
+      {
+        server: 'nginx',
+        snippet: `# For proxied applications. Needs nginx 1.19.3 or newer.
+proxy_cookie_flags ~ secure;`,
+      },
+      {
+        server: 'Apache',
+        snippet: `# Needs mod_headers. Appends the flag to every cookie, so it can
+# duplicate a flag the application already sets.
+Header always edit Set-Cookie ^(.*)$ $1;Secure`,
+      },
+      {
+        server: 'Express',
+        snippet: `res.cookie('sid', value, { secure: true });
+// Behind a proxy, also set app.set('trust proxy', 1).`,
+      },
+    ],
+    references: [
+      {
+        title: 'MDN: Set-Cookie',
+        url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie',
+      },
+      {
+        title: 'OWASP: Session Management Cheat Sheet',
+        url: 'https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html',
+      },
+    ],
+  },
+
+  'COOKIE-002': {
+    why: 'The HttpOnly flag keeps a cookie out of reach of scripts running in the page. Without it, a script that gets injected into the page, for example through cross-site scripting, can read the cookie. This matters most for session cookies.',
+    falsePositives:
+      'Some cookies are meant to be read by page scripts, such as a token that a script copies into a request header. For those, the missing flag is intentional. Sentinel cannot tell which cookies are session cookies, and it only sees cookies set on anonymous requests.',
+    fixes: [
+      {
+        server: 'nginx',
+        snippet: `# For proxied applications. Needs nginx 1.19.3 or newer.
+proxy_cookie_flags ~ httponly;`,
+      },
+      {
+        server: 'Apache',
+        snippet: `# Needs mod_headers. Appends the flag to every cookie, so it can
+# duplicate a flag the application already sets.
+Header always edit Set-Cookie ^(.*)$ $1;HttpOnly`,
+      },
+      {
+        server: 'Express',
+        snippet: `res.cookie('sid', value, { httpOnly: true });`,
+      },
+    ],
+    references: [
+      {
+        title: 'MDN: Set-Cookie',
+        url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie',
+      },
+      {
+        title: 'OWASP: Session Management Cheat Sheet',
+        url: 'https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html',
+      },
+    ],
+  },
+
+  'COOKIE-003': {
+    why: 'The SameSite attribute tells a browser whether to send a cookie with requests that start on other sites. Setting it to Lax or Strict limits that, which reduces some cross-site request forgery risks. Without the attribute, the browser applies its own default.',
+    falsePositives:
+      'Current browsers treat a cookie without SameSite as Lax, so the real difference is smaller than it once was. Older browsers may behave differently. Setting the attribute mostly makes the behaviour explicit. A cookie that must be sent cross-site, such as one used in an embedded widget, needs SameSite=None with Secure.',
+    fixes: [
+      {
+        server: 'nginx',
+        snippet: `# For proxied applications. Needs nginx 1.19.3 or newer.
+proxy_cookie_flags ~ samesite=lax;`,
+      },
+      {
+        server: 'Apache',
+        snippet: `# Needs mod_headers. Appends the attribute to every cookie, so it can
+# duplicate one the application already sets.
+Header always edit Set-Cookie ^(.*)$ $1;SameSite=Lax`,
+      },
+      {
+        server: 'Express',
+        snippet: `res.cookie('sid', value, { sameSite: 'lax' });`,
+      },
+    ],
+    references: [
+      {
+        title: 'MDN: Set-Cookie (SameSite)',
+        url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#samesitesamesite-value',
+      },
+      {
+        title: 'OWASP: SameSite cookie attribute',
+        url: 'https://owasp.org/www-community/SameSite',
+      },
+    ],
+  },
+
+  'COOKIE-004': {
+    why: 'A cookie with SameSite=None is sent with cross-site requests, and browsers that enforce the current rules only accept such a cookie when it also has the Secure flag. Without Secure, the browser may reject the cookie, so the feature that depends on it may silently not work.',
+    falsePositives:
+      'Browsers differ in how strictly they enforce this, and older ones may still store the cookie. Sentinel only sees cookies set on anonymous requests and keeps the first one seen for each name. If the cookie never needs to be sent cross-site, the fix is to change SameSite rather than add Secure.',
+    fixes: [
+      {
+        server: 'nginx',
+        snippet: `# For proxied applications. Needs nginx 1.19.3 or newer.
+proxy_cookie_flags ~ secure;`,
+      },
+      {
+        server: 'Apache',
+        snippet: `# Needs mod_headers. Appends the flag to every cookie, so it can
+# duplicate a flag the application already sets.
+Header always edit Set-Cookie ^(.*)$ $1;Secure`,
+      },
+      {
+        server: 'Express',
+        snippet: `res.cookie('widget', value, { sameSite: 'none', secure: true });`,
+      },
+    ],
+    references: [
+      {
+        title: 'MDN: Set-Cookie (SameSite)',
+        url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#samesitesamesite-value',
+      },
+    ],
+  },
 };
