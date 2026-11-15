@@ -54,9 +54,13 @@ export function requestOnce(
       const started = performance.now();
       const family = ip.includes(':') ? 6 : 4;
 
+      // Answer on the next tick. A synchronous answer lets an unreachable
+      // address fail before Node has finished setting up the socket.
       const pinnedLookup: LookupFunction = (_hostname, lookupOptions, callback) => {
-        if (lookupOptions.all) callback(null, [{ address: ip, family }]);
-        else callback(null, ip, family);
+        process.nextTick(() => {
+          if (lookupOptions.all) callback(null, [{ address: ip, family }]);
+          else callback(null, ip, family);
+        });
       };
 
       const isHttps = url.protocol === 'https:';
