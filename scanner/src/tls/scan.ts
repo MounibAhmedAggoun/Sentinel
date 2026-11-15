@@ -24,17 +24,29 @@ export async function scanTls(host: string, options: TlsScanOptions = {}): Promi
   } = options;
 
   const target = await resolve(host, { allowPrivate });
-  const ip = target.allowed ? target.ips[0] : undefined;
-  if (!target.allowed || ip === undefined) {
+  if (!target.allowed || target.ips.length === 0) {
     const message = target.allowed ? 'no usable IP address' : target.reason;
     return { ok: false, error: { code: 'BLOCKED_TARGET', message } };
   }
 
-  return connect({
-    hostname: host,
-    ip,
-    port,
-    timeoutMs,
-    ...(options.probeLegacy !== undefined ? { probeLegacy: options.probeLegacy } : {}),
-  });
+  // Try each validated address in order. Only a refused connection or a
+  // timeout moves on to the next one. Any other outcome is returned as is.
+  let outcome: TlsOutcome = {
+    ok: false,
+    error: { code: 'BLOCKED_TARGET', message: 'no usable IP address' },
+  };
+  for (const ip of target.ips) {
+    outcome = await connect({
+      hostname: host,
+      ip,
+      port,
+      timeoutMs,
+      ...(options.probeLegacy !== undefined ? { probeLegacy: options.probeLegacy } : {}),
+    });
+    if (outcome.ok) return outcome;
+    if (outcome.error.code !== 'CONNECTION_FAILED' && outcome.error.code !== 'TIMEOUT') {
+      return outcome;
+    }
+  }
+  return outcome;
 }

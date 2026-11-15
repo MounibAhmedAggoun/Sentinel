@@ -229,4 +229,38 @@ describe('scanTls against a local TLS server', () => {
 
     expect(outcome).toMatchObject({ ok: false, error: { code: 'BLOCKED_TARGET' } });
   });
+
+  it('falls back to the next address when the first one refuses the connection', async () => {
+    const second = tls.createServer(
+      {
+        key: readFileSync(path.join(dir, 'key.pem')),
+        cert: readFileSync(path.join(dir, 'cert.pem')),
+      },
+      (socket) => {
+        socket.on('error', () => {});
+        socket.end();
+      },
+    );
+    second.on('tlsClientError', () => {});
+    await new Promise<void>((resolve) => second.listen(closedPort, '127.0.0.2', resolve));
+
+    try {
+      const outcome = await scanTls('localhost', {
+        port: closedPort,
+        allowPrivate: true,
+        timeoutMs: 2000,
+        resolve: () =>
+          Promise.resolve({
+            allowed: true as const,
+            hostname: 'localhost',
+            ips: ['127.0.0.1', '127.0.0.2'],
+          }),
+      });
+
+      expect(outcome.ok).toBe(true);
+      if (outcome.ok) expect(outcome.result.ip).toBe('127.0.0.2');
+    } finally {
+      await new Promise<void>((resolve) => second.close(() => resolve()));
+    }
+  });
 });
