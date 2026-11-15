@@ -29,3 +29,5 @@
 | [DNS-004](DNS-004.md)       | medium            | SPF record observed that allows any sender                           |
 | [DNS-005](DNS-005.md)       | informational     | DMARC record observed with a monitoring-only policy                  |
 | [DNS-006](DNS-006.md)       | low               | SPF record observed without an enforcing policy                      |
+| [TCP-001](TCP-001.md)       | informational     | TCP port &lt;port&gt; observed open                                  |
+| [TCP-002](TCP-002.md)       | low, medium       | &lt;service&gt; port &lt;port&gt; observed open                      |

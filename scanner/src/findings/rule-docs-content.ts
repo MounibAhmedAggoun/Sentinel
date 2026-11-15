@@ -693,8 +693,8 @@ tls /path/to/fullchain.pem /path/to/privkey.pem`,
     ],
     references: [
       {
-        title: "Let's Encrypt: Chain of trust",
-        url: 'https://letsencrypt.org/docs/telling-browsers-which-certificate-chain-to-use/',
+        title: "Let's Encrypt: Documentation",
+        url: 'https://letsencrypt.org/docs/',
       },
       {
         title: 'MDN: Transport Layer Security',
@@ -893,6 +893,90 @@ example.com.  IN  TXT  "v=spf1 include:_spf.example.net ~all"`,
       {
         title: 'RFC 7208: Sender Policy Framework (SPF)',
         url: 'https://datatracker.ietf.org/doc/html/rfc7208',
+      },
+    ],
+  },
+  'TCP-001': {
+    why: 'An open port means a service accepted a TCP connection from the scanning host. An open port is not a weakness by itself. Whether it matters depends on which service is behind it and who is meant to reach it, so this is an inventory note: it shows what can be reached from where the scan ran.',
+    falsePositives:
+      'Ports 80 and 443 are normal for a web server, and the finding says so. Sentinel only tries a short allowlist of ports, from one machine, so a port that looks open may be closed to other networks, and a port that looks closed may be open to them. A firewall or load balancer in front of the host can also answer for ports that nothing listens on.',
+    fixes: [
+      {
+        server: 'ufw (Linux firewall)',
+        snippet: `# Allow only what should be public, then deny the rest.
+sudo ufw default deny incoming
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw enable`,
+      },
+      {
+        server: 'iptables',
+        snippet: `# Drop inbound traffic to a port that should not be public.
+sudo iptables -A INPUT -p tcp --dport 8080 -j DROP`,
+      },
+      {
+        server: 'Docker',
+        snippet: `# Bind a published port to localhost only, instead of all interfaces.
+docker run -p 127.0.0.1:8080:8080 your-image`,
+      },
+    ],
+    references: [
+      {
+        title: 'Ubuntu: UFW',
+        url: 'https://help.ubuntu.com/community/UFW',
+      },
+      {
+        title: 'Docker: Port publishing and mapping',
+        url: 'https://docs.docker.com/engine/network/port-publishing/',
+      },
+    ],
+  },
+
+  'TCP-002': {
+    why: 'FTP, Telnet, RDP and several data stores (MySQL, PostgreSQL, Redis, MongoDB) are services that are usually meant to be reached only from a private network, or that send data without encryption. When one of their ports accepts a connection from the scanning host, it is reachable from there. Sentinel reports reachability only. It does not log in, send commands or check the service.',
+    falsePositives:
+      'The service may be meant to be reachable from this network, for example a database shared between servers, or a remote desktop behind a VPN that the scan ran from. Sentinel scans from one machine, so the result describes that path only. An open port does not show that the service is misconfigured or has been accessed.',
+    fixes: [
+      {
+        server: 'ufw (Linux firewall)',
+        snippet: `# Allow a trusted address only, then block everyone else.
+sudo ufw allow from 203.0.113.10 to any port 5432 proto tcp
+sudo ufw deny 5432/tcp`,
+      },
+      {
+        server: 'iptables',
+        snippet: `# Accept one trusted address, drop the rest.
+sudo iptables -A INPUT -p tcp --dport 3306 -s 203.0.113.10 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 3306 -j DROP`,
+      },
+      {
+        server: 'Docker',
+        snippet: `# Bind the published port to localhost only.
+docker run -p 127.0.0.1:6379:6379 redis`,
+      },
+      {
+        server: 'Redis',
+        snippet: `# redis.conf: listen on localhost only.
+bind 127.0.0.1 -::1`,
+      },
+      {
+        server: 'PostgreSQL',
+        snippet: `# postgresql.conf: listen on localhost only.
+listen_addresses = 'localhost'`,
+      },
+    ],
+    references: [
+      {
+        title: 'Ubuntu: UFW',
+        url: 'https://help.ubuntu.com/community/UFW',
+      },
+      {
+        title: 'Docker: Port publishing and mapping',
+        url: 'https://docs.docker.com/engine/network/port-publishing/',
+      },
+      {
+        title: 'Redis: Security',
+        url: 'https://redis.io/docs/latest/operate/oss_and_stack/management/security/',
       },
     ],
   },
