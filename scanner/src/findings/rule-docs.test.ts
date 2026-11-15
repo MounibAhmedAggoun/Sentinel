@@ -18,6 +18,13 @@ describe('RULE_DOC_CONTENT', () => {
     }
   });
 
+  it('has content for every rule in the catalog', () => {
+    const missing = RULE_CATALOG.filter((entry) => !(entry.id in RULE_DOC_CONTENT)).map(
+      (entry) => entry.id,
+    );
+    expect(missing).toEqual([]);
+  });
+
   it('has text for every section that is always shown', () => {
     for (const content of Object.values(RULE_DOC_CONTENT)) {
       expect(content.why.trim()).not.toBe('');
