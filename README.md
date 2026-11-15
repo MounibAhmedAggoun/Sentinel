@@ -203,6 +203,7 @@ npm run export-schema   # regenerate docs/report.schema.json
 - [`docs/security-decisions.md`](docs/security-decisions.md): why each security choice was made
 - [`docs/threat-model.md`](docs/threat-model.md): threat model (in progress)
 - [`docs/report.schema.json`](docs/report.schema.json): the report format
+- [`docs/rules/`](docs/rules/README.md): one page per rule, with false positives, fix snippets and references
 - [`CONTRIBUTING.md`](CONTRIBUTING.md): how to contribute
 
 ## License
