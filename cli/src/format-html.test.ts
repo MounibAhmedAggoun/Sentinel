@@ -4,7 +4,7 @@ import { formatHtml } from './format-html.js';
 
 function report(overrides: Partial<Report> = {}): Report {
   return {
-    schemaVersion: '1.0',
+    schemaVersion: '1.1',
     tool: { name: 'sentinel', version: '0.1.0' },
     target: 'example.com',
     startedAt: '2026-10-01T10:00:00.000Z',

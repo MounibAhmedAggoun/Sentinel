@@ -118,7 +118,14 @@ describe('rules on a site that only answers on plain HTTP', () => {
   });
 
   it('judges cookie flags, but not Secure, on a plain response', () => {
-    const cookie: CookieInfo = { name: 'sid', secure: false, httpOnly: false, sameSite: null };
+    const cookie: CookieInfo = {
+      name: 'sid',
+      secure: false,
+      httpOnly: false,
+      sameSite: null,
+      pathIsRoot: false,
+      hasDomain: false,
+    };
     const found = ids(cookieRules(plainOnlyScan(BARE_HEADERS, [cookie])));
 
     expect(found).toContain(RULE_IDS.COOKIE_HTTPONLY_MISSING);

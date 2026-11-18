@@ -15,7 +15,19 @@ function badScan(): ScanResult {
     http: {
       ...base.http,
       hops: [
-        { ...hop, cookies: [{ name: 'sid', secure: false, httpOnly: false, sameSite: null }] },
+        {
+          ...hop,
+          cookies: [
+            {
+              name: 'sid',
+              secure: false,
+              httpOnly: false,
+              sameSite: null,
+              pathIsRoot: false,
+              hasDomain: false,
+            },
+          ],
+        },
       ],
     },
     httpPlain: {

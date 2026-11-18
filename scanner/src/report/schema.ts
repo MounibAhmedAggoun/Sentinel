@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const SCHEMA_VERSION = '1.0';
+export const SCHEMA_VERSION = '1.1';
 
 const severity = z.enum(['informational', 'low', 'medium', 'high']);
 
@@ -40,6 +40,8 @@ const httpHop = z.object({
       secure: z.boolean(),
       httpOnly: z.boolean(),
       sameSite: z.enum(['strict', 'lax', 'none']).nullable(),
+      pathIsRoot: z.boolean(),
+      hasDomain: z.boolean(),
     }),
   ),
   remoteIp: z.string(),

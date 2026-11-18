@@ -17,6 +17,10 @@ export interface CookieInfo {
   secure: boolean;
   httpOnly: boolean;
   sameSite: 'strict' | 'lax' | 'none' | null;
+  /** True when the cookie sets Path=/ explicitly. The Path text itself is not stored. */
+  pathIsRoot: boolean;
+  /** True when the cookie sets a Domain attribute. The Domain text itself is not stored. */
+  hasDomain: boolean;
 }
 
 /** One request/response in a redirect chain. */

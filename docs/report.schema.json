@@ -5,7 +5,7 @@
   "properties": {
     "schemaVersion": {
       "type": "string",
-      "const": "1.0"
+      "const": "1.1"
     },
     "tool": {
       "type": "object",
@@ -506,9 +506,15 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "pathIsRoot": {
+                      "type": "boolean"
+                    },
+                    "hasDomain": {
+                      "type": "boolean"
                     }
                   },
-                  "required": ["name", "secure", "httpOnly", "sameSite"],
+                  "required": ["name", "secure", "httpOnly", "sameSite", "pathIsRoot", "hasDomain"],
                   "additionalProperties": false
                 }
               },
@@ -610,9 +616,15 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "pathIsRoot": {
+                      "type": "boolean"
+                    },
+                    "hasDomain": {
+                      "type": "boolean"
                     }
                   },
-                  "required": ["name", "secure", "httpOnly", "sameSite"],
+                  "required": ["name", "secure", "httpOnly", "sameSite", "pathIsRoot", "hasDomain"],
                   "additionalProperties": false
                 }
               },

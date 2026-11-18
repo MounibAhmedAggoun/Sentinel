@@ -5,7 +5,14 @@ import { RULE_IDS } from '../ids.js';
 import type { ScanResult } from '../types.js';
 import { cookieRules } from './cookies.js';
 
-const GOOD: CookieInfo = { name: 'sid', secure: true, httpOnly: true, sameSite: 'lax' };
+const GOOD: CookieInfo = {
+  name: 'sid',
+  secure: true,
+  httpOnly: true,
+  sameSite: 'lax',
+  pathIsRoot: false,
+  hasDomain: false,
+};
 
 function scanWithCookies(cookies: CookieInfo[], url = 'https://example.com/'): ScanResult {
   const base = makeScan();
@@ -102,8 +109,8 @@ describe('cookieRules', () => {
   it('groups several cookies under one finding', () => {
     const findings = cookieRules(
       scanWithCookies([
-        { name: 'a', secure: true, httpOnly: false, sameSite: 'lax' },
-        { name: 'b', secure: true, httpOnly: false, sameSite: 'lax' },
+        { ...GOOD, name: 'a', httpOnly: false },
+        { ...GOOD, name: 'b', httpOnly: false },
         GOOD,
       ]),
     );

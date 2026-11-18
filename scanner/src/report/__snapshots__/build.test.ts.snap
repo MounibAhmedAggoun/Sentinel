@@ -181,7 +181,7 @@ exports[`buildReport > matches a snapshot 1`] = `
     ],
     "startUrl": "http://example.com/",
   },
-  "schemaVersion": "1.0",
+  "schemaVersion": "1.1",
   "startedAt": "2026-10-01T10:00:00.000Z",
   "target": "example.com",
   "tcp": {

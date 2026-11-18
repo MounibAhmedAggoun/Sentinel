@@ -113,7 +113,14 @@ describe('fetchHttp', () => {
     const result = await fetchHttp('https://example.com/', { resolve: allow, send });
 
     expect(result.hops[0]?.cookies).toEqual([
-      { name: 'sid', secure: true, httpOnly: true, sameSite: null },
+      {
+        name: 'sid',
+        secure: true,
+        httpOnly: true,
+        sameSite: null,
+        pathIsRoot: false,
+        hasDomain: false,
+      },
     ]);
   });
 });

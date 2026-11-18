@@ -1,6 +1,10 @@
 import type { CookieInfo } from './types.js';
 
-/** Parses Set-Cookie header values into the flags we care about. Values are never stored. */
+/**
+ * Parses Set-Cookie header values into the flags we care about.
+ * Values are never stored, and neither are the Path and Domain texts: only
+ * whether Path is exactly "/" and whether a Domain attribute is present.
+ */
 export function parseCookies(setCookie: string[]): CookieInfo[] {
   return setCookie.flatMap((line) => {
     const [pair = '', ...attributes] = line.split(';').map((part) => part.trim());
@@ -10,6 +14,8 @@ export function parseCookies(setCookie: string[]): CookieInfo[] {
     let secure = false;
     let httpOnly = false;
     let sameSite: CookieInfo['sameSite'] = null;
+    let pathIsRoot = false;
+    let hasDomain = false;
 
     for (const attribute of attributes) {
       const [key = '', value = ''] = attribute.split('=').map((s) => s.trim());
@@ -25,9 +31,15 @@ export function parseCookies(setCookie: string[]): CookieInfo[] {
           if (v === 'strict' || v === 'lax' || v === 'none') sameSite = v;
           break;
         }
+        case 'path':
+          pathIsRoot = value === '/';
+          break;
+        case 'domain':
+          hasDomain = true;
+          break;
       }
     }
 
-    return [{ name, secure, httpOnly, sameSite }];
+    return [{ name, secure, httpOnly, sameSite, pathIsRoot, hasDomain }];
   });
 }

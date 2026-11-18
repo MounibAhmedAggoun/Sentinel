@@ -1,18 +1,18 @@
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "1.1",
   "tool": {
     "name": "sentinel",
-    "version": "0.1.0"
+    "version": "0.2.0"
   },
   "target": "example.com",
-  "startedAt": "2026-10-07T10:19:15.780Z",
-  "finishedAt": "2026-10-07T10:19:16.645Z",
-  "durationMs": 865,
+  "startedAt": "2026-11-18T06:14:11.068Z",
+  "finishedAt": "2026-11-18T06:14:15.507Z",
+  "durationMs": 4439,
   "dns": {
     "hostname": "example.com",
     "a": {
       "ok": true,
-      "records": ["172.66.147.243", "104.20.23.154"]
+      "records": ["104.20.23.154", "172.66.147.243"]
     },
     "aaaa": {
       "ok": true,
@@ -36,11 +36,8 @@
       "records": ["v=spf1 -all", "_k2n1y4vw3qtb4skdx9e7dxt97qrmmq9"]
     },
     "caa": {
-      "ok": false,
-      "error": {
-        "code": "NODATA",
-        "message": "queryCaa ENODATA example.com"
-      }
+      "ok": true,
+      "records": []
     },
     "dmarcTxt": {
       "ok": true,
@@ -63,22 +60,13 @@
         "url": "https://example.com/",
         "status": 200,
         "headers": {
-          "date": "Wed, 07 Oct 2026 09:19:35 GMT",
           "content-type": "text/html; charset=utf-8",
-          "transfer-encoding": "chunked",
-          "connection": "close",
           "server": "cloudflare",
-          "last-modified": "Sun, 04 Oct 2026 20:44:03 GMT",
-          "allow": "GET, HEAD",
-          "accept-ranges": "bytes",
-          "age": "3909",
-          "cf-cache-status": "HIT",
-          "cf-ray": "a46bd33839dd647c-ORN",
           "alt-svc": "h3=\":443\"; ma=86400"
         },
         "cookies": [],
         "remoteIp": "104.20.23.154",
-        "timingMs": 238
+        "timingMs": 420
       }
     ],
     "error": null
@@ -91,22 +79,13 @@
         "url": "http://example.com/",
         "status": 200,
         "headers": {
-          "date": "Wed, 07 Oct 2026 09:19:35 GMT",
           "content-type": "text/html; charset=utf-8",
-          "transfer-encoding": "chunked",
-          "connection": "close",
           "server": "cloudflare",
-          "last-modified": "Sun, 04 Oct 2026 20:44:03 GMT",
-          "allow": "GET, HEAD",
-          "accept-ranges": "bytes",
-          "age": "3819",
-          "cf-cache-status": "HIT",
-          "cf-ray": "a46bd3397a2bba98-ALG",
           "alt-svc": "h3=\":443\"; ma=86400"
         },
         "cookies": [],
-        "remoteIp": "172.66.147.243",
-        "timingMs": 98
+        "remoteIp": "104.20.23.154",
+        "timingMs": 660
       }
     ],
     "error": null
@@ -117,14 +96,49 @@
       "ip": "104.20.23.154",
       "ports": [
         {
+          "port": 21,
+          "state": "timeout",
+          "timingMs": 3004
+        },
+        {
+          "port": 22,
+          "state": "timeout",
+          "timingMs": 3005
+        },
+        {
+          "port": 25,
+          "state": "timeout",
+          "timingMs": 3005
+        },
+        {
           "port": 80,
           "state": "open",
-          "timingMs": 39
+          "timingMs": 55
         },
         {
           "port": 443,
           "state": "open",
-          "timingMs": 44
+          "timingMs": 58
+        },
+        {
+          "port": 3306,
+          "state": "timeout",
+          "timingMs": 3000
+        },
+        {
+          "port": 5432,
+          "state": "timeout",
+          "timingMs": 3001
+        },
+        {
+          "port": 8080,
+          "state": "open",
+          "timingMs": 61
+        },
+        {
+          "port": 8443,
+          "state": "open",
+          "timingMs": 59
         }
       ]
     }
@@ -132,7 +146,7 @@
   "tls": {
     "ok": true,
     "result": {
-      "ip": "172.66.147.243",
+      "ip": "104.20.23.154",
       "protocol": "TLSv1.3",
       "cipher": "TLS_AES_256_GCM_SHA384",
       "certificate": {
@@ -152,7 +166,7 @@
       },
       "analysis": {
         "expired": false,
-        "daysUntilExpiry": 79,
+        "daysUntilExpiry": 37,
         "selfSigned": false,
         "hostnameMatches": true
       }
@@ -234,10 +248,21 @@
       "remediation": "Consider redirecting all HTTP requests to HTTPS, and pair it with an HSTS header once the whole site works over HTTPS."
     },
     {
+      "ruleId": "DNS-009",
+      "title": "DMARC record observed without a reporting address",
+      "severity": "informational",
+      "description": "The DMARC record for example.com has no rua tag, so no address receives aggregate reports about mail that passes or fails the checks. Without reports it is hard to see which mail a stricter policy would affect.",
+      "evidence": {
+        "raw": "v=DMARC1;p=reject;sp=reject;adkim=s;aspf=s",
+        "foundAt": "example.com"
+      },
+      "remediation": "Consider adding a rua tag, such as rua=mailto:dmarc-reports@example.com, to receive aggregate reports."
+    },
+    {
       "ruleId": "DNS-003",
       "title": "CAA record not observed",
       "severity": "informational",
-      "description": "No CAA record was observed for example.com. CAA records restrict which certificate authorities may issue certificates for a domain.",
+      "description": "No CAA record was observed for example.com or any of its parent domains. CAA records restrict which certificate authorities may issue certificates for a domain.",
       "evidence": {
         "hostname": "example.com",
         "present": false
@@ -253,7 +278,7 @@
         "port": 80,
         "state": "open",
         "ip": "104.20.23.154",
-        "timingMs": 39
+        "timingMs": 55
       },
       "remediation": "No action needed if this port is meant to be public."
     },
@@ -266,9 +291,35 @@
         "port": 443,
         "state": "open",
         "ip": "104.20.23.154",
-        "timingMs": 44
+        "timingMs": 58
       },
       "remediation": "No action needed if this port is meant to be public."
+    },
+    {
+      "ruleId": "TCP-001",
+      "title": "TCP port 8080 observed open",
+      "severity": "informational",
+      "description": "Port 8080 on example.com accepted a TCP connection. An open port is not a weakness by itself. Whether it matters depends on what service is behind it and who is meant to reach it.",
+      "evidence": {
+        "port": 8080,
+        "state": "open",
+        "ip": "104.20.23.154",
+        "timingMs": 61
+      },
+      "remediation": "Confirm this service is meant to be reachable from the internet. If it is not, consider restricting it with a firewall."
+    },
+    {
+      "ruleId": "TCP-001",
+      "title": "TCP port 8443 observed open",
+      "severity": "informational",
+      "description": "Port 8443 on example.com accepted a TCP connection. An open port is not a weakness by itself. Whether it matters depends on what service is behind it and who is meant to reach it.",
+      "evidence": {
+        "port": 8443,
+        "state": "open",
+        "ip": "104.20.23.154",
+        "timingMs": 59
+      },
+      "remediation": "Confirm this service is meant to be reachable from the internet. If it is not, consider restricting it with a firewall."
     }
   ],
   "errors": []

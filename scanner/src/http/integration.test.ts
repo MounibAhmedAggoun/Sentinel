@@ -69,7 +69,16 @@ describe('fetchHttp against a local mock server', () => {
     expect(hop?.headers['server']).toBe('mock');
     expect(hop?.remoteIp).toBe('127.0.0.1');
     expect(hop?.timingMs).toBeGreaterThanOrEqual(0);
-    expect(hop?.cookies).toEqual([{ name: 'sid', secure: true, httpOnly: true, sameSite: 'lax' }]);
+    expect(hop?.cookies).toEqual([
+      {
+        name: 'sid',
+        secure: true,
+        httpOnly: true,
+        sameSite: 'lax',
+        pathIsRoot: false,
+        hasDomain: false,
+      },
+    ]);
   });
 
   it('follows a redirect chain to the final URL', async () => {
