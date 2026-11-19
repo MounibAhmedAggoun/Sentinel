@@ -159,4 +159,27 @@ describe('fetchHttp against a local mock server', () => {
     expect(result.hops[0]?.status).toBe(404);
     expect(result.hops).toHaveLength(1);
   });
+
+  it('connects to the validated address and never looks the name up again', async () => {
+    const port = new URL(base).port;
+    let lookups = 0;
+
+    const result = await fetchHttp(`http://rebind.test:${port}/ok`, {
+      ...local,
+      timeoutMs: 2000,
+      resolve: () => {
+        lookups++;
+        return Promise.resolve({
+          allowed: true as const,
+          hostname: 'rebind.test',
+          ips: lookups === 1 ? ['127.0.0.1'] : ['169.254.169.254'],
+        });
+      },
+    });
+
+    expect(result.error).toBeNull();
+    expect(result.hops[0]?.status).toBe(200);
+    expect(result.hops[0]?.remoteIp).toBe('127.0.0.1');
+    expect(lookups).toBe(1);
+  });
 });
