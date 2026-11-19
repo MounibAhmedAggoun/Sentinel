@@ -6,5 +6,5 @@
   "reporters": ["clear-text", "progress", "html"],
   "htmlReporter": { "fileName": "reports/mutation/index.html" },
   "tempDirName": ".stryker-tmp",
-  "thresholds": { "high": 85, "low": 70, "break": null }
+  "thresholds": { "high": 95, "low": 90, "break": 90 }
 }

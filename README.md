@@ -4,6 +4,7 @@ A defensive, evidence-first web reconnaissance scanner: DNS, HTTP, TCP and TLS c
 
 [![CI](https://github.com/MounibAhmedAggoun/Sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/MounibAhmedAggoun/Sentinel/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Mutation score gate](https://img.shields.io/badge/mutation%20score%20gate-%E2%89%A590%25-brightgreen)](https://github.com/MounibAhmedAggoun/Sentinel/actions/workflows/ci.yml)
 
 > **Authorized use only.** Scan only systems you own or have explicit
 > written permission to test.
