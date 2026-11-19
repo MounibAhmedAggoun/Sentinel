@@ -20,6 +20,8 @@
 | [COOKIE-002](COOKIE-002.md) | low               | Cookie flag not observed: HttpOnly                                   |
 | [COOKIE-003](COOKIE-003.md) | low               | Cookie flag not observed: SameSite                                   |
 | [COOKIE-004](COOKIE-004.md) | low               | Cookie observed with SameSite=None but without Secure                |
+| [COOKIE-005](COOKIE-005.md) | low               | Cookie observed with a __Secure- prefix but without Secure           |
+| [COOKIE-006](COOKIE-006.md) | low               | Cookie observed with a __Host- prefix that breaks its rules          |
 | [TLS-001](TLS-001.md)       | high              | Certificate expiry date has passed                                   |
 | [TLS-002](TLS-002.md)       | low, medium, high | Certificate is close to its expiry date                              |
 | [TLS-003](TLS-003.md)       | medium            | Self-signed certificate observed                                     |

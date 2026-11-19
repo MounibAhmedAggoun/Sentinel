@@ -155,3 +155,79 @@ describe('cookieRules', () => {
     expect(cookieRules({ ...scan, http })).toEqual([]);
   });
 });
+
+describe('cookieRules: name prefixes', () => {
+  const PREFIX_IDS: string[] = [
+    RULE_IDS.COOKIE_SECURE_PREFIX_WITHOUT_SECURE,
+    RULE_IDS.COOKIE_HOST_PREFIX_INVALID,
+  ];
+  const prefixIds = (cookies: CookieInfo[], url?: string): string[] =>
+    cookieRules(scanWithCookies(cookies, url))
+      .map((f) => f.ruleId)
+      .filter((id) => PREFIX_IDS.includes(id));
+
+  const HOST_GOOD: CookieInfo = { ...GOOD, name: '__Host-sid', pathIsRoot: true };
+
+  it('notes a __Secure- cookie without Secure', () => {
+    const cookies = [{ ...GOOD, name: '__Secure-sid', secure: false }];
+
+    expect(prefixIds(cookies)).toEqual([RULE_IDS.COOKIE_SECURE_PREFIX_WITHOUT_SECURE]);
+  });
+
+  it('accepts a __Secure- cookie with Secure', () => {
+    expect(prefixIds([{ ...GOOD, name: '__Secure-sid' }])).toEqual([]);
+  });
+
+  it('accepts a __Host- cookie that meets every rule', () => {
+    expect(prefixIds([HOST_GOOD])).toEqual([]);
+  });
+
+  it('notes a __Host- cookie without Secure', () => {
+    expect(prefixIds([{ ...HOST_GOOD, secure: false }])).toEqual([
+      RULE_IDS.COOKIE_HOST_PREFIX_INVALID,
+    ]);
+  });
+
+  it('notes a __Host- cookie without Path=/', () => {
+    expect(prefixIds([{ ...HOST_GOOD, pathIsRoot: false }])).toEqual([
+      RULE_IDS.COOKIE_HOST_PREFIX_INVALID,
+    ]);
+  });
+
+  it('notes a __Host- cookie with a Domain attribute', () => {
+    expect(prefixIds([{ ...HOST_GOOD, hasDomain: true }])).toEqual([
+      RULE_IDS.COOKIE_HOST_PREFIX_INVALID,
+    ]);
+  });
+
+  it('shows which requirement a __Host- cookie missed, without storing values', () => {
+    const findings = cookieRules(scanWithCookies([{ ...HOST_GOOD, hasDomain: true }])).filter(
+      (f) => f.ruleId === RULE_IDS.COOKIE_HOST_PREFIX_INVALID,
+    );
+
+    expect(findings[0]?.severity).toBe('low');
+    expect(findings[0]?.evidence).toEqual({
+      prefix: '__Host-',
+      cookies: [{ name: '__Host-sid', secure: true, pathIsRoot: true, hasDomain: true }],
+    });
+  });
+
+  it('does not judge a cookie whose name only contains the prefix', () => {
+    const cookies = [
+      { ...GOOD, name: 'my__Secure-sid', secure: false },
+      { ...GOOD, name: 'x__Host-sid', hasDomain: true },
+    ];
+
+    expect(prefixIds(cookies)).toEqual([]);
+  });
+
+  it('matches the prefix case-sensitively, as browsers do', () => {
+    expect(prefixIds([{ ...GOOD, name: '__secure-sid', secure: false }])).toEqual([]);
+  });
+
+  it('does not judge prefixes on a cookie set over plain HTTP', () => {
+    const cookies = [{ ...HOST_GOOD, secure: false }];
+
+    expect(prefixIds(cookies, 'http://example.com/')).toEqual([]);
+  });
+});

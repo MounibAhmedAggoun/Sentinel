@@ -101,5 +101,46 @@ export const cookieRules: Rule = (scan) => {
     });
   }
 
+  // Cookie name prefixes (__Secure- and __Host-) only protect when the rules are met,
+  // and browsers reject a prefixed cookie that breaks them. Judged over HTTPS only,
+  // like the Secure flag, since a prefixed cookie set over plain HTTP is rejected anyway.
+  const securePrefixBroken = cookies
+    .filter((c) => c.overHttps && c.name.startsWith('__Secure-') && !c.secure)
+    .map((c) => c.name);
+  if (securePrefixBroken.length > 0) {
+    findings.push({
+      ruleId: RULE_IDS.COOKIE_SECURE_PREFIX_WITHOUT_SECURE,
+      title: 'Cookie observed with a __Secure- prefix but without Secure',
+      severity: 'low',
+      description: `${securePrefixBroken.length} cookie(s) have a name starting with __Secure- but were set without the Secure flag. Browsers that support cookie prefixes reject such cookies, so they may not be stored at all.`,
+      evidence: { prefix: '__Secure-', secure: false, cookies: securePrefixBroken },
+      remediation: 'Add the Secure flag to these cookies, or rename them without the prefix.',
+    });
+  }
+
+  const hostPrefixBroken = cookies.filter(
+    (c) =>
+      c.overHttps && c.name.startsWith('__Host-') && (!c.secure || !c.pathIsRoot || c.hasDomain),
+  );
+  if (hostPrefixBroken.length > 0) {
+    findings.push({
+      ruleId: RULE_IDS.COOKIE_HOST_PREFIX_INVALID,
+      title: 'Cookie observed with a __Host- prefix that breaks its rules',
+      severity: 'low',
+      description: `${hostPrefixBroken.length} cookie(s) have a name starting with __Host- but were set without the Secure flag, without Path=/, or with a Domain attribute. Browsers that support cookie prefixes reject such cookies, so they may not be stored at all.`,
+      evidence: {
+        prefix: '__Host-',
+        cookies: hostPrefixBroken.map((c) => ({
+          name: c.name,
+          secure: c.secure,
+          pathIsRoot: c.pathIsRoot,
+          hasDomain: c.hasDomain,
+        })),
+      },
+      remediation:
+        'A __Host- cookie needs the Secure flag, Path=/ and no Domain attribute. Fix the attributes, or rename the cookie without the prefix.',
+    });
+  }
+
   return findings;
 };

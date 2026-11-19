@@ -145,6 +145,21 @@ export const RULE_CATALOG: readonly CatalogEntry[] = [
     summary: 'A cookie sets SameSite=None without the Secure flag.',
   },
   {
+    id: 'COOKIE-005',
+    area: 'cookie',
+    title: 'Cookie observed with a __Secure- prefix but without Secure',
+    severities: ['low'],
+    summary: 'A cookie named with the __Secure- prefix has no Secure flag.',
+  },
+  {
+    id: 'COOKIE-006',
+    area: 'cookie',
+    title: 'Cookie observed with a __Host- prefix that breaks its rules',
+    severities: ['low'],
+    summary:
+      'A cookie named with the __Host- prefix has no Secure flag, no Path=/, or sets a Domain.',
+  },
+  {
     id: 'TLS-001',
     area: 'tls',
     title: 'Certificate expiry date has passed',

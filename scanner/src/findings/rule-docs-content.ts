@@ -1230,4 +1230,48 @@ _dmarc.example.com.  IN  TXT  "v=DMARC1; p=reject; sp=reject; rua=mailto:dmarc-r
       },
     ],
   },
+  'COOKIE-005': {
+    why: 'A cookie whose name starts with __Secure- asks the browser to accept it only if it also has the Secure flag and was set over HTTPS. Browsers that support prefixes reject a __Secure- cookie without Secure, so the cookie may never be stored and the feature that relies on it may silently not work.',
+    falsePositives:
+      'Sentinel judges this only for cookies set on HTTPS responses, and it sees only cookies set on anonymous requests. Names are matched case-sensitively, as browsers do, and only at the start of the name. A cookie that merely contains the text elsewhere in its name is not judged. Very old browsers ignore prefixes and may still store the cookie.',
+    fixes: [
+      {
+        server: 'Express',
+        snippet: `res.cookie('__Secure-sid', value, { secure: true });
+// Behind a proxy, also set app.set('trust proxy', 1).`,
+      },
+      {
+        server: 'Apache',
+        snippet: `# Needs mod_headers. Appends the flag to every cookie, so it can
+# duplicate a flag the application already sets.
+Header always edit Set-Cookie ^(.*)$ $1;Secure`,
+      },
+    ],
+    references: [
+      {
+        title: 'MDN: Set-Cookie',
+        url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie',
+      },
+    ],
+  },
+
+  'COOKIE-006': {
+    why: 'A cookie whose name starts with __Host- asks for the strictest scope. The browser accepts it only if it has the Secure flag, was set over HTTPS, has Path=/ and has no Domain attribute. That ties the cookie to one exact host. A __Host- cookie that misses one of these rules is rejected by browsers that support prefixes, so it may never be stored.',
+    falsePositives:
+      'Sentinel judges this only for cookies set on HTTPS responses, and it sees only cookies set on anonymous requests. It records whether Path is exactly / and whether a Domain attribute is present, and it does not store the Path or Domain text. Names are matched case-sensitively, and only at the start of the name. Very old browsers ignore prefixes and may still store the cookie.',
+    fixes: [
+      {
+        server: 'Express',
+        snippet: `// Secure, Path=/ and no domain option.
+res.cookie('__Host-sid', value, { secure: true, path: '/' });
+// Behind a proxy, also set app.set('trust proxy', 1).`,
+      },
+    ],
+    references: [
+      {
+        title: 'MDN: Set-Cookie',
+        url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie',
+      },
+    ],
+  },
 };
