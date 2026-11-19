@@ -276,10 +276,30 @@ A running log. Add an entry whenever a security-relevant choice is made.
   may matter, never that the site is vulnerable. All four are low severity.
 - **Existing rules unchanged:** The "missing" rules and their IDs are
   untouched. Weakness is reported as an additional finding.
-- **Known gaps:** The `__Host-` and `__Secure-` cookie prefix checks need the
-  cookie parser to record `Path` and `Domain`, which it does not yet. The SPF
-  10-DNS-lookup limit needs recursive `include:` resolution, which is
-  separate work.
+- **Added later in F-08:** More rules were added, each with its own stable ID.
+  - HSTS without `includeSubDomains` or without `preload` (informational,
+    judged only when `max-age` is already at least 180 days).
+  - CSP without `object-src` (when `default-src` is absent too) or without
+    `base-uri` (informational).
+  - More than one SPF record, and an SPF record with more than 10 lookup
+    mechanisms.
+  - DMARC without `rua`, with `pct` below 100 on an enforcing policy, and with
+    an `sp` weaker than `p`.
+  - Cookies named `__Secure-` without `Secure`, and `__Host-` cookies that
+    lack `Secure` or `Path=/`, or set a `Domain`.
+- **Cookie fields and schema 1.1:** The cookie prefix checks needed two new
+  facts, so each cookie in the report now has `pathIsRoot` and `hasDomain`.
+  They are booleans on purpose: the `Path` and `Domain` text comes from the
+  target and no rule needs it, so it is never stored. This changes the report
+  format, so `schemaVersion` went from `1.0` to `1.1`.
+- **Known limit of the version bump:** The schema version is an exact match,
+  so a report saved with `1.0` no longer passes `sentinel validate` on a build
+  that writes `1.1`. Accepting both versions would be separate work and has
+  not been done.
+- **Known gaps:** The SPF lookup count only covers the terms written in the
+  record Sentinel fetched. Included and redirected records are not followed,
+  so the real total can be higher. The DMARC tag rules read the raw record
+  text and do not check each subdomain separately.
 
 ## SSRF corpus, property tests and mutation testing (S-01)
 
