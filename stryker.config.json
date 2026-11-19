@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
   "testRunner": "vitest",
-  "mutate": ["core/src/net-guard.ts"],
+  "mutate": ["core/src/net-guard.ts", "core/src/resolve-target.ts"],
   "coverageAnalysis": "perTest",
   "reporters": ["clear-text", "progress", "html"],
   "htmlReporter": { "fileName": "reports/mutation/index.html" },

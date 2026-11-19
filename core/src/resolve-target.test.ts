@@ -55,4 +55,10 @@ describe('resolveTarget', () => {
     const result = await resolveTarget('nope.invalid');
     expect(result.allowed).toBe(false);
   });
+
+  it('blocks a hostname whose lookup returns no addresses at all', async () => {
+    mockLookup.mockResolvedValue([]);
+    const result = await resolveTarget('empty.example.com');
+    expect(result).toEqual({ allowed: false, reason: 'hostname did not resolve' });
+  });
 });
