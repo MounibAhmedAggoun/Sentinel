@@ -23,7 +23,7 @@ describe('formatRuleList with the real catalog', () => {
     const text = formatRuleList(RULE_CATALOG);
 
     expect(text).toMatch(/TLS-002\s+LOW\/MEDIUM\/HIGH/);
-    expect(text).toMatch(/TCP-002\s+LOW\/MEDIUM/);
+    expect(text).toMatch(/TCP-002\s+INFORMATIONAL\/LOW\/MEDIUM/);
   });
 
   it('keeps every row to a bounded width', () => {

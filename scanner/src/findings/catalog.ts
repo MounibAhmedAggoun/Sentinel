@@ -304,7 +304,7 @@ export const RULE_CATALOG: readonly CatalogEntry[] = [
     id: 'TCP-002',
     area: 'tcp',
     title: '<service> port <port> observed open',
-    severities: ['low', 'medium'],
+    severities: ['informational', 'low', 'medium'],
     summary:
       'A port for a sensitive service (FTP, Telnet, RDP, MySQL, PostgreSQL, Redis or MongoDB) accepted a TCP connection.',
   },

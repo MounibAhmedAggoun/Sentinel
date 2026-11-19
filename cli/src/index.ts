@@ -29,7 +29,7 @@ import { formatMarkdown } from './format-markdown.js';
 import { logger } from './logger.js';
 import { countFailedModules } from './module-failures.js';
 import { parseFormat } from './output-format.js';
-import { filterFindings, parseRuleList } from './rule-filter.js';
+import { filterFindings, markExpectedPorts, parseRuleList } from './rule-filter.js';
 import { parseTimeout } from './timeout.js';
 import { targetSchema } from './validate.js';
 import { validateReportFile } from './validate-report.js';
@@ -48,6 +48,10 @@ program
   .description('Scan an authorized target')
   .argument('<target>', 'hostname or IP address you are authorized to scan')
   .option('--ports <list>', 'comma-separated ports to check, e.g. 80,443')
+  .option(
+    '--expected-ports <list>',
+    'ports that are meant to be open, e.g. 3306. Sensitive-port findings for them are reported as informational',
+  )
   .option('--json <file>', 'also write the full report to this JSON file')
   .option('--format <name>', 'how to print the result: table, markdown, or html', 'table')
   .option(
@@ -78,6 +82,7 @@ program
       rawTarget: string,
       options: {
         ports?: string;
+        expectedPorts?: string;
         json?: string;
         format: string;
         failOn: string;
@@ -108,6 +113,17 @@ program
             return;
           }
           ports = parsedPorts.ports;
+        }
+
+        let expectedPorts: number[] = [];
+        if (options.expectedPorts !== undefined) {
+          const parsedExpected = parsePorts(options.expectedPorts);
+          if (!parsedExpected.ok) {
+            logger.error({ reason: parsedExpected.error }, 'invalid expected ports');
+            process.exitCode = ExitCode.Usage;
+            return;
+          }
+          expectedPorts = parsedExpected.ports;
         }
 
         const outputFormat = parseFormat(options.format);
@@ -237,7 +253,10 @@ program
 
         const scan = { target, dns, http, httpPlain, tcp, tls };
         // The scan always runs every check. --only and --skip choose what is reported.
-        const findings = filterFindings(evaluate(scan), ruleFilter);
+        const findings = markExpectedPorts(
+          filterFindings(evaluate(scan), ruleFilter),
+          expectedPorts,
+        );
 
         const report = buildReport({
           scan,
