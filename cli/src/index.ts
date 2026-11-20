@@ -26,6 +26,8 @@ import { formatTerminal, sanitize } from './format.js';
 import { formatRuleList } from './format-rules.js';
 import { formatHtml } from './format-html.js';
 import { formatMarkdown } from './format-markdown.js';
+import { formatJunit } from './format-junit.js';
+import { formatSarif } from './format-sarif.js';
 import { logger } from './logger.js';
 import { countFailedModules } from './module-failures.js';
 import { parseFormat } from './output-format.js';
@@ -53,7 +55,11 @@ program
     'ports that are meant to be open, e.g. 3306. Sensitive-port findings for them are reported as informational',
   )
   .option('--json <file>', 'also write the full report to this JSON file')
-  .option('--format <name>', 'how to print the result: table, markdown, or html', 'table')
+  .option(
+    '--format <name>',
+    'how to print the result: table, markdown, html, junit, or sarif',
+    'table',
+  )
   .option(
     '--fail-on <severity>',
     'exit with code 1 when a finding is at or above this severity: informational, low, medium, high',
@@ -287,6 +293,10 @@ program
           console.log(formatMarkdown(report));
         } else if (outputFormat.format === 'html') {
           console.log(formatHtml(report));
+        } else if (outputFormat.format === 'junit') {
+          console.log(formatJunit(report, failOn.severity));
+        } else if (outputFormat.format === 'sarif') {
+          console.log(formatSarif(report));
         } else {
           console.log(formatTerminal(report));
         }

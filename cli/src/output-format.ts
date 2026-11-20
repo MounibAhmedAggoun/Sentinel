@@ -1,4 +1,4 @@
-export const OUTPUT_FORMATS = ['table', 'markdown', 'html'] as const;
+export const OUTPUT_FORMATS = ['table', 'markdown', 'html', 'junit', 'sarif'] as const;
 
 export type OutputFormat = (typeof OUTPUT_FORMATS)[number];
 

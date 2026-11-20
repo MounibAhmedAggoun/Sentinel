@@ -6,7 +6,7 @@ describe('parseFormat', () => {
     expect(parseFormat(name)).toEqual({ ok: true, format: name });
   });
 
-  it.each(['', 'json', 'HTML', 'Markdown', ' table', 'table ', 'md', 'sarif', 'junit'])(
+  it.each(['', 'json', 'HTML', 'Markdown', ' table', 'table ', 'md', 'SARIF', 'xml'])(
     'rejects %j',
     (raw) => {
       expect(parseFormat(raw).ok).toBe(false);
@@ -17,6 +17,8 @@ describe('parseFormat', () => {
     const result = parseFormat('nope');
 
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toBe('format must be one of: table, markdown, html');
+    if (!result.ok) {
+      expect(result.error).toBe('format must be one of: table, markdown, html, junit, sarif');
+    }
   });
 });
