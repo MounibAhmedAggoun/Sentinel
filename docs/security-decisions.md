@@ -403,3 +403,31 @@ A running log. Add an entry whenever a security-relevant choice is made.
   data, a new alert is the first thing that should be questioned.
 - **Known gaps:** Branch protection, OpenSSF Scorecard, an SBOM on releases,
   and npm provenance for publishing are not set up yet.
+
+## Container hardening (S-02)
+
+- **Decision:** The image already runs as the non-root `node` user. The
+  documented way to run it now adds a read-only root filesystem, all Linux
+  capabilities dropped, `no-new-privileges`, and a writable `tmpfs` on `/tmp`
+  for report files. CI runs the image with those same flags, so a change that
+  needs more privileges fails the build.
+- **Why:** net-guard is one layer. If it has a bug, or the process is ever
+  compromised, the container should still have no extra privileges and no
+  place to write except `/tmp`.
+- **What was checked:** By hand, on the image built from the Dockerfile, a real
+  scan of `example.com` and a real `--json` report write to `/tmp` both worked
+  under those flags. The CI step runs `--version` only, so it proves the
+  process starts under the restrictions, not that a scan works. It does not
+  scan an outside site, so CI does not depend on one being reachable.
+- **Egress rules (guidance only):** The scan worker should not be able to
+  reach private address ranges or the cloud metadata address
+  (`169.254.169.254`) at the network level. On cloud hosts, the metadata
+  service should require its token-based version with a hop limit of 1. These
+  rules are not enforced by the image and are not tested, because the lab was
+  removed. They are written down so a deployment can add them.
+- **Alternatives considered:** A `docker-compose.yml` with the settings. Not
+  added, because the CI step already proves the flags work and a compose file
+  is not on the roadmap.
+- **Known gaps:** The egress rules are untested. CI does not run a real scan
+  under the flags. A read-only container needs `--tmpfs /tmp` to write a
+  report.

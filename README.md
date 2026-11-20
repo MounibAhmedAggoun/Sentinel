@@ -35,6 +35,15 @@ docker build -t sentinel .
 docker run --rm sentinel scan example.com
 ```
 
+The image runs as a non-root user. To lock it down further, run it with a
+read-only filesystem and no extra privileges. A report file then needs a
+writable `/tmp`:
+
+```bash
+docker run --rm --read-only --cap-drop ALL --security-opt no-new-privileges \
+  --tmpfs /tmp sentinel scan example.com --json /tmp/report.json
+```
+
 Save a report in another format by redirecting the output (log lines go to
 stderr, so they stay out of the file):
 
