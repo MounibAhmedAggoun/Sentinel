@@ -1,0 +1,44 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions: {}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the GitHub Release
+      id-token: write # npm trusted publishing and provenance
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - name: The tag matches the package version
+        run: test "v$(node -p "require('./cli/package.json').version")" = "$GITHUB_REF_NAME"
+      - name: Trusted publishing needs npm 11.5.1 or newer
+        run: |
+          v="$(npm --version)"
+          echo "npm $v"
+          printf '11.5.1\n%s\n' "$v" | sort -V -C
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build --workspace cli
+      - run: node cli/dist/index.js --version
+      - name: Generate the SBOM
+        run: npm sbom --sbom-format cyclonedx --omit dev --workspace cli > sentinel-sbom.cdx.json
+      - name: Publish to npm with provenance
+        run: npm publish --workspace cli --provenance --access public
+      - name: Create the GitHub Release with the SBOM attached
+        run: gh release create "$GITHUB_REF_NAME" sentinel-sbom.cdx.json --generate-notes --verify-tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
