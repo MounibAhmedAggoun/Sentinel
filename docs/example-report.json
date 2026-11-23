@@ -1,18 +1,18 @@
 {
-  "schemaVersion": "1.1",
+  "schemaVersion": "1.2",
   "tool": {
     "name": "sentinel",
     "version": "0.2.0"
   },
   "target": "example.com",
-  "startedAt": "2026-11-18T06:14:11.068Z",
-  "finishedAt": "2026-11-18T06:14:15.507Z",
-  "durationMs": 4439,
+  "startedAt": "2026-11-22T19:18:52.876Z",
+  "finishedAt": "2026-11-22T19:18:56.704Z",
+  "durationMs": 3828,
   "dns": {
     "hostname": "example.com",
     "a": {
       "ok": true,
-      "records": ["104.20.23.154", "172.66.147.243"]
+      "records": ["172.66.147.243", "104.20.23.154"]
     },
     "aaaa": {
       "ok": true,
@@ -65,8 +65,8 @@
           "alt-svc": "h3=\":443\"; ma=86400"
         },
         "cookies": [],
-        "remoteIp": "104.20.23.154",
-        "timingMs": 420
+        "remoteIp": "172.66.147.243",
+        "timingMs": 276
       }
     ],
     "error": null
@@ -84,8 +84,8 @@
           "alt-svc": "h3=\":443\"; ma=86400"
         },
         "cookies": [],
-        "remoteIp": "104.20.23.154",
-        "timingMs": 660
+        "remoteIp": "172.66.147.243",
+        "timingMs": 114
       }
     ],
     "error": null
@@ -93,37 +93,37 @@
   "tcp": {
     "ok": true,
     "result": {
-      "ip": "104.20.23.154",
+      "ip": "172.66.147.243",
       "ports": [
         {
           "port": 21,
           "state": "timeout",
-          "timingMs": 3004
+          "timingMs": 3016
         },
         {
           "port": 22,
           "state": "timeout",
-          "timingMs": 3005
+          "timingMs": 3016
         },
         {
           "port": 25,
           "state": "timeout",
-          "timingMs": 3005
+          "timingMs": 3016
         },
         {
           "port": 80,
           "state": "open",
-          "timingMs": 55
+          "timingMs": 66
         },
         {
           "port": 443,
           "state": "open",
-          "timingMs": 58
+          "timingMs": 64
         },
         {
           "port": 3306,
           "state": "timeout",
-          "timingMs": 3000
+          "timingMs": 3001
         },
         {
           "port": 5432,
@@ -133,12 +133,12 @@
         {
           "port": 8080,
           "state": "open",
-          "timingMs": 61
+          "timingMs": 131
         },
         {
           "port": 8443,
           "state": "open",
-          "timingMs": 59
+          "timingMs": 131
         }
       ]
     }
@@ -146,9 +146,10 @@
   "tls": {
     "ok": true,
     "result": {
-      "ip": "104.20.23.154",
+      "ip": "172.66.147.243",
       "protocol": "TLSv1.3",
       "cipher": "TLS_AES_256_GCM_SHA384",
+      "alpnProtocol": "h2",
       "certificate": {
         "subject": {
           "commonName": "example.com",
@@ -162,11 +163,14 @@
         "validFrom": "2026-09-26T22:49:11.000Z",
         "validTo": "2026-12-25T22:56:35.000Z",
         "serialNumber": "01EEE6AABB521D5E14FC315FD9985690",
-        "fingerprint256": "85:CA:6A:B0:68:E9:BC:CE:88:B6:C4:AA:3C:47:F7:D1:72:28:13:4A:45:7F:87:0D:38:00:E6:22:3A:0D:F0:7A"
+        "fingerprint256": "85:CA:6A:B0:68:E9:BC:CE:88:B6:C4:AA:3C:47:F7:D1:72:28:13:4A:45:7F:87:0D:38:00:E6:22:3A:0D:F0:7A",
+        "keyType": "ec",
+        "keyBits": null,
+        "signatureAlgorithm": "ecdsa-with-SHA256"
       },
       "analysis": {
         "expired": false,
-        "daysUntilExpiry": 37,
+        "daysUntilExpiry": 33,
         "selfSigned": false,
         "hostnameMatches": true
       }
@@ -277,8 +281,8 @@
       "evidence": {
         "port": 80,
         "state": "open",
-        "ip": "104.20.23.154",
-        "timingMs": 55
+        "ip": "172.66.147.243",
+        "timingMs": 66
       },
       "remediation": "No action needed if this port is meant to be public."
     },
@@ -290,8 +294,8 @@
       "evidence": {
         "port": 443,
         "state": "open",
-        "ip": "104.20.23.154",
-        "timingMs": 58
+        "ip": "172.66.147.243",
+        "timingMs": 64
       },
       "remediation": "No action needed if this port is meant to be public."
     },
@@ -303,8 +307,8 @@
       "evidence": {
         "port": 8080,
         "state": "open",
-        "ip": "104.20.23.154",
-        "timingMs": 61
+        "ip": "172.66.147.243",
+        "timingMs": 131
       },
       "remediation": "Confirm this service is meant to be reachable from the internet. If it is not, consider restricting it with a firewall."
     },
@@ -316,8 +320,8 @@
       "evidence": {
         "port": 8443,
         "state": "open",
-        "ip": "104.20.23.154",
-        "timingMs": 59
+        "ip": "172.66.147.243",
+        "timingMs": 131
       },
       "remediation": "Confirm this service is meant to be reachable from the internet. If it is not, consider restricting it with a firewall."
     }

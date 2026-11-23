@@ -29,6 +29,9 @@
 | [TLS-005](TLS-005.md)       | medium                     | Certificate not trusted by the system certificate store              |
 | [TLS-006](TLS-006.md)       | medium                     | Outdated TLS protocol version accepted                               |
 | [TLS-007](TLS-007.md)       | informational              | TLS 1.3 not observed as supported                                    |
+| [TLS-008](TLS-008.md)       | medium                     | Certificate observed with a short RSA key                            |
+| [TLS-009](TLS-009.md)       | medium                     | Certificate observed with a weak signature algorithm                 |
+| [TLS-010](TLS-010.md)       | informational              | HTTP/2 not observed as offered                                       |
 | [DNS-001](DNS-001.md)       | low                        | SPF record not observed                                              |
 | [DNS-002](DNS-002.md)       | low                        | DMARC record not observed                                            |
 | [DNS-003](DNS-003.md)       | informational              | CAA record not observed                                              |

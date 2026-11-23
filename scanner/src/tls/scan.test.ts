@@ -15,6 +15,7 @@ const okOutcome: TlsOutcome = {
     ip: PUBLIC_IP,
     protocol: 'TLSv1.3',
     cipher: 'TLS_AES_256_GCM_SHA384',
+    alpnProtocol: 'h2',
     legacyProtocols: null,
     certificate: {
       subject: { commonName: 'example.com', organization: null },
@@ -24,6 +25,9 @@ const okOutcome: TlsOutcome = {
       validTo: '2027-01-01T00:00:00.000Z',
       serialNumber: '01',
       fingerprint256: 'AA:BB',
+      keyType: 'rsa',
+      keyBits: 2048,
+      signatureAlgorithm: 'sha256WithRSAEncryption',
     },
     analysis: {
       expired: false,

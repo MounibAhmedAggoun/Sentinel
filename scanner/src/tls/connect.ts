@@ -53,6 +53,24 @@ function checkSelfSigned(raw: Buffer | undefined): boolean {
   }
 }
 
+/** Reads the key type, the RSA key size and the signature algorithm from the raw certificate. */
+function readKeyInfo(raw: Buffer | undefined): {
+  keyType: string | null;
+  keyBits: number | null;
+  signatureAlgorithm: string | null;
+} {
+  if (raw === undefined) return { keyType: null, keyBits: null, signatureAlgorithm: null };
+  try {
+    const x509 = new X509Certificate(raw);
+    const type = x509.publicKey.asymmetricKeyType ?? null;
+    const bits =
+      type === 'rsa' ? (x509.publicKey.asymmetricKeyDetails?.modulusLength ?? null) : null;
+    return { keyType: type, keyBits: bits, signatureAlgorithm: x509.signatureAlgorithm ?? null };
+  } catch {
+    return { keyType: null, keyBits: null, signatureAlgorithm: null };
+  }
+}
+
 function toIso(value: string | undefined): string {
   const time = Date.parse(value ?? '');
   return Number.isNaN(time) ? '' : new Date(time).toISOString();
@@ -98,6 +116,8 @@ function connectOnce(options: TlsConnectOptions): Promise<TlsOutcome> {
       // SNI must be a hostname, not an IP address.
       ...(isIP(hostname) === 0 ? { servername: hostname } : {}),
       rejectUnauthorized: false,
+      // Only read which protocol the server picks. No request is sent after the handshake.
+      ALPNProtocols: ['h2', 'http/1.1'],
       ...(options.minVersion !== undefined
         ? { minVersion: options.minVersion, maxVersion: options.minVersion }
         : {}),
@@ -130,6 +150,7 @@ function connectOnce(options: TlsConnectOptions): Promise<TlsOutcome> {
           ip,
           protocol: socket.getProtocol() ?? null,
           cipher: socket.getCipher()?.name ?? null,
+          alpnProtocol: typeof socket.alpnProtocol === 'string' ? socket.alpnProtocol : null,
           legacyProtocols: null,
           certificate: {
             subject: toCertName(cert.subject),
@@ -139,6 +160,7 @@ function connectOnce(options: TlsConnectOptions): Promise<TlsOutcome> {
             validTo,
             serialNumber: cert.serialNumber,
             fingerprint256: cert.fingerprint256,
+            ...readKeyInfo(cert.raw),
           },
           analysis: analyzeCertificate({
             hostname,

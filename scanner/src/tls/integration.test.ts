@@ -154,6 +154,10 @@ describe('connectTls against a local TLS server', () => {
     expect(outcome.result.certificate.subject.commonName).toBe('localhost');
     expect(outcome.result.certificate.san).toEqual(['localhost', '127.0.0.1']);
     expect(outcome.result.certificate.fingerprint256).toBeTruthy();
+    expect(outcome.result.certificate.keyType).toBe('rsa');
+    expect(outcome.result.certificate.keyBits).toBe(2048);
+    expect(outcome.result.certificate.signatureAlgorithm).toBeTruthy();
+    expect(outcome.result.alpnProtocol).toBeNull();
   });
 
   it('still reads a self-signed certificate and flags it', async () => {
@@ -214,6 +218,32 @@ describe('connectTls against a local TLS server', () => {
     });
 
     expect(outcome).toMatchObject({ ok: false, error: { code: 'CONNECTION_FAILED' } });
+  });
+
+  it('reports the application protocol the server chooses', async () => {
+    const h2Server = tls.createServer(
+      {
+        key: readFileSync(path.join(dir, 'key.pem')),
+        cert: readFileSync(path.join(dir, 'cert.pem')),
+        ALPNProtocols: ['h2'],
+      },
+      (socket) => {
+        socket.on('error', () => {});
+        socket.end();
+      },
+    );
+    h2Server.on('tlsClientError', () => {});
+    await new Promise<void>((resolve) => h2Server.listen(0, '127.0.0.1', resolve));
+    const port = (h2Server.address() as AddressInfo).port;
+
+    try {
+      const outcome = await connectTls({ hostname: 'localhost', ip: '127.0.0.1', port });
+
+      expect(outcome.ok).toBe(true);
+      if (outcome.ok) expect(outcome.result.alpnProtocol).toBe('h2');
+    } finally {
+      await new Promise<void>((resolve) => h2Server.close(() => resolve()));
+    }
   });
 });
 

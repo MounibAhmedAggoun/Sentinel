@@ -1274,4 +1274,101 @@ res.cookie('__Host-sid', value, { secure: true, path: '/' });
       },
     ],
   },
+  'TLS-008': {
+    why: 'The strength of an RSA key depends on its length. Keys shorter than 2048 bits are no longer considered strong enough, and certificate authorities and browsers expect at least 2048. A short key makes it cheaper for someone with enough computing power to recover the private key from the public one.',
+    falsePositives:
+      'Sentinel reads the key of the certificate the server presented first, the leaf, and not the keys further up the chain. A key that is not RSA, such as an ECDSA key, is not judged here, because key sizes are not comparable between types. The server may also present different certificates for different names or addresses, and Sentinel reads one connection.',
+    fixes: [
+      {
+        server: 'nginx',
+        snippet: `# Create a new RSA 2048 key and a certificate request, then install the new certificate.
+openssl req -new -newkey rsa:2048 -nodes -keyout example.com.key -out example.com.csr
+# Or let certbot issue a new certificate, which uses a strong key by default:
+sudo certbot --nginx -d example.com`,
+      },
+      {
+        server: 'Apache',
+        snippet: `openssl req -new -newkey rsa:2048 -nodes -keyout example.com.key -out example.com.csr
+# Or:
+sudo certbot --apache -d example.com`,
+      },
+    ],
+    references: [
+      {
+        title: "Let's Encrypt: Documentation",
+        url: 'https://letsencrypt.org/docs/',
+      },
+      {
+        title: 'Certbot',
+        url: 'https://certbot.eff.org/',
+      },
+    ],
+  },
+
+  'TLS-009': {
+    why: 'A certificate signature proves that a certificate authority issued the certificate. SHA-1 and MD5 are hash functions with known weaknesses, so a signature made with them is easier to forge than one made with SHA-256 or stronger. Browsers no longer trust certificates signed with SHA-1 or MD5.',
+    falsePositives:
+      'Sentinel reads the signature of the certificate the server presented first, the leaf, and not the certificates further up the chain. It matches the words SHA-1 and MD5 in the algorithm name that Node reports. A certificate from a private authority on an internal system can still use an old algorithm on purpose.',
+    fixes: [
+      {
+        server: 'nginx',
+        snippet: `# Replace the certificate with one signed with SHA-256 or stronger.
+sudo certbot --nginx -d example.com`,
+      },
+      {
+        server: 'Apache',
+        snippet: `sudo certbot --apache -d example.com`,
+      },
+    ],
+    references: [
+      {
+        title: "Let's Encrypt: Documentation",
+        url: 'https://letsencrypt.org/docs/',
+      },
+      {
+        title: 'Certbot',
+        url: 'https://certbot.eff.org/',
+      },
+    ],
+  },
+
+  'TLS-010': {
+    why: 'During the TLS handshake a client lists the application protocols it speaks, and the server picks one. HTTP/2 sends many requests over one connection, which can make pages load faster than HTTP/1.1. When the server picks something else, or nothing, it does not offer HTTP/2 to this client.',
+    falsePositives:
+      'HTTP/1.1 is fully supported and is not a weakness, which is why this is informational. A server may offer HTTP/3 through another route that Sentinel does not look at. Some proxies and load balancers pick the protocol per connection. Sentinel offers h2 and http/1.1, sends no request, and reads the choice from one handshake.',
+    fixes: [
+      {
+        server: 'nginx',
+        snippet: `server {
+    listen 443 ssl;
+    http2 on;   # nginx 1.25.1 or newer. On older versions use: listen 443 ssl http2;
+}`,
+      },
+      {
+        server: 'Apache',
+        snippet: `# Needs mod_http2.
+Protocols h2 http/1.1`,
+      },
+      {
+        server: 'Caddy',
+        snippet: `# Caddy enables HTTP/2 by default for HTTPS sites.
+# If it was restricted, allow it again in the global options:
+{
+    servers {
+        protocols h1 h2 h3
+    }
+}`,
+      },
+    ],
+    references: [
+      {
+        title: 'RFC 9113: HTTP/2',
+        url: 'https://datatracker.ietf.org/doc/html/rfc9113',
+      },
+      {
+        title: 'MDN: Evolution of HTTP',
+        url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP',
+      },
+    ],
+  },
 };

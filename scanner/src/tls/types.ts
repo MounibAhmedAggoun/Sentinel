@@ -21,6 +21,12 @@ export interface CertificateInfo {
   validTo: string;
   serialNumber: string;
   fingerprint256: string;
+  /** e.g. "rsa", "ec", "ed25519". Null when it could not be read. */
+  keyType: string | null;
+  /** The RSA modulus size in bits. Null for other key types. */
+  keyBits: number | null;
+  /** e.g. "sha256WithRSAEncryption". Null when it could not be read. */
+  signatureAlgorithm: string | null;
 }
 
 export interface TlsAnalysis {
@@ -46,6 +52,8 @@ export interface TlsResult {
   protocol: string | null;
   /** e.g. "TLS_AES_256_GCM_SHA384". */
   cipher: string | null;
+  /** The application protocol the server chose, e.g. "h2". Null when none was chosen. */
+  alpnProtocol: string | null;
   certificate: CertificateInfo;
   analysis: TlsAnalysis;
   /** Null when the legacy-protocol probe was not run for this scan. */

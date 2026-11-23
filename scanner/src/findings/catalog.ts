@@ -213,6 +213,27 @@ export const RULE_CATALOG: readonly CatalogEntry[] = [
       'The server did not accept a handshake pinned to TLS 1.3. Checked only with --probe-legacy-tls.',
   },
   {
+    id: 'TLS-008',
+    area: 'tls',
+    title: 'Certificate observed with a short RSA key',
+    severities: ['medium'],
+    summary: 'The certificate has an RSA key shorter than 2048 bits.',
+  },
+  {
+    id: 'TLS-009',
+    area: 'tls',
+    title: 'Certificate observed with a weak signature algorithm',
+    severities: ['medium'],
+    summary: 'The certificate is signed with SHA-1 or MD5.',
+  },
+  {
+    id: 'TLS-010',
+    area: 'tls',
+    title: 'HTTP/2 not observed as offered',
+    severities: ['informational'],
+    summary: 'The server did not choose HTTP/2 when it was offered during the TLS handshake.',
+  },
+  {
     id: 'DNS-001',
     area: 'dns',
     title: 'SPF record not observed',

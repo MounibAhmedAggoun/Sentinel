@@ -75,6 +75,7 @@ export function makeScan(overrides: Partial<ScanResult> = {}): ScanResult {
         ip: '93.184.216.34',
         protocol: 'TLSv1.3',
         cipher: 'TLS_AES_256_GCM_SHA384',
+        alpnProtocol: 'h2',
         legacyProtocols: null,
         certificate: {
           subject: { commonName: 'example.com', organization: null },
@@ -84,6 +85,9 @@ export function makeScan(overrides: Partial<ScanResult> = {}): ScanResult {
           validTo: '2027-01-01T00:00:00.000Z',
           serialNumber: '01',
           fingerprint256: 'AA:BB',
+          keyType: 'rsa',
+          keyBits: 2048,
+          signatureAlgorithm: 'sha256WithRSAEncryption',
         },
         analysis: {
           expired: false,

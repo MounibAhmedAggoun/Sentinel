@@ -181,7 +181,7 @@ exports[`buildReport > matches a snapshot 1`] = `
     ],
     "startUrl": "http://example.com/",
   },
-  "schemaVersion": "1.1",
+  "schemaVersion": "1.2",
   "startedAt": "2026-10-01T10:00:00.000Z",
   "target": "example.com",
   "tcp": {
@@ -194,6 +194,7 @@ exports[`buildReport > matches a snapshot 1`] = `
   "tls": {
     "ok": true,
     "result": {
+      "alpnProtocol": "h2",
       "analysis": {
         "daysUntilExpiry": 90,
         "expired": false,
@@ -206,10 +207,13 @@ exports[`buildReport > matches a snapshot 1`] = `
           "commonName": "Some CA",
           "organization": "Some Org",
         },
+        "keyBits": 2048,
+        "keyType": "rsa",
         "san": [
           "example.com",
         ],
         "serialNumber": "01",
+        "signatureAlgorithm": "sha256WithRSAEncryption",
         "subject": {
           "commonName": "example.com",
           "organization": null,

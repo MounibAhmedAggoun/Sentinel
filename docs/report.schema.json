@@ -5,7 +5,7 @@
   "properties": {
     "schemaVersion": {
       "type": "string",
-      "const": "1.1"
+      "const": "1.2"
     },
     "tool": {
       "type": "object",
@@ -756,6 +756,9 @@
                 "cipher": {
                   "type": ["string", "null"]
                 },
+                "alpnProtocol": {
+                  "type": ["string", "null"]
+                },
                 "certificate": {
                   "type": "object",
                   "properties": {
@@ -802,6 +805,15 @@
                     },
                     "fingerprint256": {
                       "type": "string"
+                    },
+                    "keyType": {
+                      "type": ["string", "null"]
+                    },
+                    "keyBits": {
+                      "type": ["number", "null"]
+                    },
+                    "signatureAlgorithm": {
+                      "type": ["string", "null"]
                     }
                   },
                   "required": [
@@ -811,7 +823,10 @@
                     "validFrom",
                     "validTo",
                     "serialNumber",
-                    "fingerprint256"
+                    "fingerprint256",
+                    "keyType",
+                    "keyBits",
+                    "signatureAlgorithm"
                   ],
                   "additionalProperties": false
                 },
@@ -835,7 +850,7 @@
                   "additionalProperties": false
                 }
               },
-              "required": ["ip", "protocol", "cipher", "certificate", "analysis"],
+              "required": ["ip", "protocol", "cipher", "alpnProtocol", "certificate", "analysis"],
               "additionalProperties": false
             }
           },

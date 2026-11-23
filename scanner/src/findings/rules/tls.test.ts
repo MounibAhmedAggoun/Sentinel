@@ -241,3 +241,93 @@ describe('tlsRules', () => {
     expect(findings.map((f) => f.ruleId)).not.toContain(RULE_IDS.TLS_1_3_NOT_SUPPORTED);
   });
 });
+
+describe('tlsRules: key, signature and ALPN', () => {
+  function withCertificate(
+    certificate: Partial<{
+      keyType: string | null;
+      keyBits: number | null;
+      signatureAlgorithm: string | null;
+    }>,
+    alpnProtocol: string | null = 'h2',
+  ): ScanResult {
+    const base = makeScan();
+    if (!base.tls.ok) throw new Error('fixture TLS should be ok');
+    return {
+      ...base,
+      tls: {
+        ok: true,
+        result: {
+          ...base.tls.result,
+          alpnProtocol,
+          certificate: { ...base.tls.result.certificate, ...certificate },
+        },
+      },
+    };
+  }
+  const ids = (scan: ScanResult): string[] => tlsRules(scan).map((f) => f.ruleId);
+
+  it('notes an RSA key shorter than 2048 bits', () => {
+    const findings = tlsRules(withCertificate({ keyType: 'rsa', keyBits: 1024 }));
+
+    expect(findings.map((f) => f.ruleId)).toEqual([RULE_IDS.TLS_WEAK_RSA_KEY]);
+    expect(findings[0]).toMatchObject({
+      severity: 'medium',
+      evidence: { keyType: 'rsa', keyBits: 1024, minimumBits: 2048 },
+    });
+  });
+
+  it('accepts an RSA key of exactly 2048 bits', () => {
+    expect(ids(withCertificate({ keyType: 'rsa', keyBits: 2048 }))).toEqual([]);
+  });
+
+  it('does not judge a key that is not RSA, or one whose size is unknown', () => {
+    expect(ids(withCertificate({ keyType: 'ec', keyBits: null }))).toEqual([]);
+    expect(ids(withCertificate({ keyType: 'rsa', keyBits: null }))).toEqual([]);
+  });
+
+  it.each(['sha1WithRSAEncryption', 'ecdsa-with-SHA1', 'md5WithRSAEncryption', 'RSA-SHA1'])(
+    'notes the weak signature algorithm %s',
+    (signatureAlgorithm) => {
+      const findings = tlsRules(withCertificate({ signatureAlgorithm }));
+
+      expect(findings.map((f) => f.ruleId)).toEqual([RULE_IDS.TLS_WEAK_SIGNATURE_ALGORITHM]);
+      expect(findings[0]).toMatchObject({ severity: 'medium', evidence: { signatureAlgorithm } });
+    },
+  );
+
+  it.each([
+    'sha256WithRSAEncryption',
+    'sha384WithRSAEncryption',
+    'sha512WithRSAEncryption',
+    'ecdsa-with-SHA256',
+    'ecdsa-with-SHA384',
+  ])('accepts the signature algorithm %s', (signatureAlgorithm) => {
+    expect(ids(withCertificate({ signatureAlgorithm }))).toEqual([]);
+  });
+
+  it('does not judge a signature algorithm that could not be read', () => {
+    expect(ids(withCertificate({ signatureAlgorithm: null }))).toEqual([]);
+  });
+
+  it('accepts a server that chose HTTP/2', () => {
+    expect(ids(withCertificate({}, 'h2'))).toEqual([]);
+  });
+
+  it('notes a server that chose no application protocol', () => {
+    const findings = tlsRules(withCertificate({}, null));
+
+    expect(findings.map((f) => f.ruleId)).toEqual([RULE_IDS.TLS_HTTP2_NOT_OFFERED]);
+    expect(findings[0]).toMatchObject({
+      severity: 'informational',
+      evidence: { alpnProtocol: null },
+    });
+  });
+
+  it('notes a server that chose HTTP/1.1 and says so', () => {
+    const findings = tlsRules(withCertificate({}, 'http/1.1'));
+
+    expect(findings.map((f) => f.ruleId)).toEqual([RULE_IDS.TLS_HTTP2_NOT_OFFERED]);
+    expect(findings[0]?.description).toContain('http/1.1');
+  });
+});

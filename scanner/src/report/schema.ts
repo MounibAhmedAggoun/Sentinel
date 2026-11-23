@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const SCHEMA_VERSION = '1.1';
+export const SCHEMA_VERSION = '1.2';
 
 const severity = z.enum(['informational', 'low', 'medium', 'high']);
 
@@ -82,6 +82,7 @@ const tls = z.union([
       ip: z.string(),
       protocol: z.string().nullable(),
       cipher: z.string().nullable(),
+      alpnProtocol: z.string().nullable(),
       certificate: z.object({
         subject: certName,
         issuer: certName,
@@ -90,6 +91,9 @@ const tls = z.union([
         validTo: z.string(),
         serialNumber: z.string(),
         fingerprint256: z.string(),
+        keyType: z.string().nullable(),
+        keyBits: z.number().nullable(),
+        signatureAlgorithm: z.string().nullable(),
       }),
       analysis: z.object({
         expired: z.boolean(),

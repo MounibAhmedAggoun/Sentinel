@@ -124,5 +124,45 @@ export const tlsRules: Rule = (scan) => {
     }
   }
 
+  // The key and the signature of the certificate the server presented (the leaf only).
+  const { keyType, keyBits, signatureAlgorithm } = certificate;
+
+  if (keyType === 'rsa' && keyBits !== null && keyBits < 2048) {
+    findings.push({
+      ruleId: RULE_IDS.TLS_WEAK_RSA_KEY,
+      title: 'Certificate observed with a short RSA key',
+      severity: 'medium',
+      description: `The certificate served by ${scan.target} has an RSA key of ${keyBits} bits. Keys shorter than 2048 bits are no longer considered strong enough, and current browsers and certificate authorities expect at least 2048.`,
+      evidence: { keyType, keyBits, minimumBits: 2048 },
+      remediation:
+        'Consider issuing a new certificate with an RSA key of at least 2048 bits, or with an ECDSA key.',
+    });
+  }
+
+  if (signatureAlgorithm !== null && /(?<![a-z0-9])sha-?1(?![0-9])|md5/i.test(signatureAlgorithm)) {
+    findings.push({
+      ruleId: RULE_IDS.TLS_WEAK_SIGNATURE_ALGORITHM,
+      title: 'Certificate observed with a weak signature algorithm',
+      severity: 'medium',
+      description: `The certificate served by ${scan.target} is signed with ${signatureAlgorithm}. SHA-1 and MD5 signatures are considered weak, and browsers no longer trust certificates signed with them.`,
+      evidence: { signatureAlgorithm },
+      remediation: 'Consider replacing the certificate with one signed with SHA-256 or stronger.',
+    });
+  }
+
+  // The server's choice during the handshake. This says nothing about HTTP/3 or about
+  // whether HTTP/1.1 is a problem for this site, so it stays informational.
+  const alpn = scan.tls.result.alpnProtocol;
+  if (alpn !== 'h2') {
+    findings.push({
+      ruleId: RULE_IDS.TLS_HTTP2_NOT_OFFERED,
+      title: 'HTTP/2 not observed as offered',
+      severity: 'informational',
+      description: `${scan.target} did not choose HTTP/2 when it was offered during the TLS handshake${alpn === null ? ' (no application protocol was chosen)' : ` (it chose ${alpn})`}. HTTP/1.1 still works. HTTP/2 can load pages faster over one connection.`,
+      evidence: { alpnProtocol: alpn },
+      remediation: 'Consider enabling HTTP/2 if the web server or proxy supports it.',
+    });
+  }
+
   return findings;
 };
