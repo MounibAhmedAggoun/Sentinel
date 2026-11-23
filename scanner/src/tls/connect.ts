@@ -3,6 +3,7 @@ import { isIP } from 'node:net';
 import tls from 'node:tls';
 import { analyzeCertificate } from './analyze.js';
 import { probeLegacyProtocols } from './legacy-probe.js';
+import { readSignatureAlgorithm } from './signature.js';
 import type { CertName, TlsError, TlsOutcome } from './types.js';
 
 export interface TlsConnectOptions {
@@ -65,7 +66,9 @@ function readKeyInfo(raw: Buffer | undefined): {
     const type = x509.publicKey.asymmetricKeyType ?? null;
     const bits =
       type === 'rsa' ? (x509.publicKey.asymmetricKeyDetails?.modulusLength ?? null) : null;
-    return { keyType: type, keyBits: bits, signatureAlgorithm: x509.signatureAlgorithm ?? null };
+    // Node reports the signature algorithm only from v24.9.0, so read it from the bytes otherwise.
+    const signatureAlgorithm = x509.signatureAlgorithm ?? readSignatureAlgorithm(raw);
+    return { keyType: type, keyBits: bits, signatureAlgorithm };
   } catch {
     return { keyType: null, keyBits: null, signatureAlgorithm: null };
   }
