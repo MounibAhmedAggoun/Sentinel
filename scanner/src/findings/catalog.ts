@@ -234,6 +234,14 @@ export const RULE_CATALOG: readonly CatalogEntry[] = [
     summary: 'The server did not choose HTTP/2 when it was offered during the TLS handshake.',
   },
   {
+    id: 'TLS-011',
+    area: 'tls',
+    title: 'Certificate validity period observed above the CA/Browser Forum maximum',
+    severities: ['informational'],
+    summary:
+      'The certificate was issued for longer than the maximum that applied on its issue date.',
+  },
+  {
     id: 'DNS-001',
     area: 'dns',
     title: 'SPF record not observed',

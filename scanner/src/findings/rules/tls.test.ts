@@ -331,3 +331,81 @@ describe('tlsRules: key, signature and ALPN', () => {
     expect(findings[0]?.description).toContain('http/1.1');
   });
 });
+
+describe('tlsRules: validity period', () => {
+  function withDates(
+    validFrom: string,
+    validTo: string,
+    analysis: Partial<{
+      selfSigned: boolean;
+      trust: { authorized: boolean; error: string | null };
+    }> = {},
+  ): ScanResult {
+    const base = makeScan();
+    if (!base.tls.ok) throw new Error('fixture TLS should be ok');
+    return {
+      ...base,
+      tls: {
+        ok: true,
+        result: {
+          ...base.tls.result,
+          certificate: { ...base.tls.result.certificate, validFrom, validTo },
+          analysis: { ...base.tls.result.analysis, ...analysis },
+        },
+      },
+    };
+  }
+  const ids = (scan: ScanResult): string[] => tlsRules(scan).map((f) => f.ruleId);
+
+  it('notes a certificate issued in 2026 that is valid for 201 days', () => {
+    const findings = tlsRules(withDates('2026-03-15T00:00:00.000Z', '2026-10-02T00:00:00.000Z'));
+
+    expect(findings.map((f) => f.ruleId)).toEqual([RULE_IDS.TLS_VALIDITY_TOO_LONG]);
+    expect(findings[0]).toMatchObject({
+      severity: 'informational',
+      evidence: { validityDays: 201, maximumDays: 200 },
+    });
+  });
+
+  it('accepts a certificate valid for exactly 200 days', () => {
+    expect(ids(withDates('2026-03-15T00:00:00.000Z', '2026-10-01T00:00:00.000Z'))).toEqual([]);
+  });
+
+  it('does not judge a certificate issued before 2026-03-15', () => {
+    expect(ids(withDates('2026-03-14T00:00:00.000Z', '2027-04-16T00:00:00.000Z'))).toEqual([]);
+  });
+
+  it('uses the 100 day limit for certificates issued from 2027-03-15', () => {
+    expect(ids(withDates('2027-03-15T00:00:00.000Z', '2027-06-24T00:00:00.000Z'))).toEqual([
+      RULE_IDS.TLS_VALIDITY_TOO_LONG,
+    ]);
+    expect(ids(withDates('2027-03-15T00:00:00.000Z', '2027-06-23T00:00:00.000Z'))).toEqual([]);
+  });
+
+  it('uses the 47 day limit for certificates issued from 2029-03-15', () => {
+    expect(ids(withDates('2029-03-15T00:00:00.000Z', '2029-05-02T00:00:00.000Z'))).toEqual([
+      RULE_IDS.TLS_VALIDITY_TOO_LONG,
+    ]);
+    expect(ids(withDates('2029-03-15T00:00:00.000Z', '2029-05-01T00:00:00.000Z'))).toEqual([]);
+  });
+
+  it('skips self-signed certificates', () => {
+    const scan = withDates('2026-03-15T00:00:00.000Z', '2030-03-15T00:00:00.000Z', {
+      selfSigned: true,
+    });
+
+    expect(ids(scan)).not.toContain(RULE_IDS.TLS_VALIDITY_TOO_LONG);
+  });
+
+  it('skips certificates the system trust store did not accept', () => {
+    const scan = withDates('2026-03-15T00:00:00.000Z', '2030-03-15T00:00:00.000Z', {
+      trust: { authorized: false, error: 'unable to get local issuer certificate' },
+    });
+
+    expect(ids(scan)).not.toContain(RULE_IDS.TLS_VALIDITY_TOO_LONG);
+  });
+
+  it('does not judge a certificate whose dates cannot be read', () => {
+    expect(ids(withDates('garbage', '2030-03-15T00:00:00.000Z'))).toEqual([]);
+  });
+});

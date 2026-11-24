@@ -9,6 +9,20 @@ function expirySeverity(days: number): Finding['severity'] | null {
   return null;
 }
 
+const DAY_MS = 86_400_000;
+
+/**
+ * CA/Browser Forum maximum validity (days) for a publicly trusted certificate,
+ * by issue date (Ballot SC-081v3). Null before 2026-03-15, when the limit was
+ * 398 days and is not checked here.
+ */
+function maxValidityDays(issuedAt: number): number | null {
+  if (issuedAt >= Date.UTC(2029, 2, 15)) return 47;
+  if (issuedAt >= Date.UTC(2027, 2, 15)) return 100;
+  if (issuedAt >= Date.UTC(2026, 2, 15)) return 200;
+  return null;
+}
+
 export const tlsRules: Rule = (scan) => {
   if (!scan.tls.ok) return [];
 
@@ -120,6 +134,35 @@ export const tlsRules: Rule = (scan) => {
         description: `${scan.target} did not accept a handshake pinned to TLS 1.3, the current version with the best security and performance properties. Many servers still run only TLS 1.2, which remains secure.`,
         evidence: { missingTls13: true },
         remediation: 'Consider enabling TLS 1.3 if the server software supports it.',
+      });
+    }
+  }
+
+  // Only for certificates a public CA would have issued: self-signed and untrusted
+  // certificates are not bound by the CA/Browser Forum limit.
+  const issuedAt = Date.parse(certificate.validFrom);
+  const expiresAt = Date.parse(certificate.validTo);
+  if (
+    !Number.isNaN(issuedAt) &&
+    !Number.isNaN(expiresAt) &&
+    !analysis.selfSigned &&
+    analysis.trust.authorized
+  ) {
+    const maxDays = maxValidityDays(issuedAt);
+    if (maxDays !== null && expiresAt - issuedAt > maxDays * DAY_MS) {
+      findings.push({
+        ruleId: RULE_IDS.TLS_VALIDITY_TOO_LONG,
+        title: 'Certificate validity period observed above the CA/Browser Forum maximum',
+        severity: 'informational',
+        description: `The certificate served by ${scan.target} was issued on ${certificate.validFrom} and is valid until ${certificate.validTo}, which is longer than the ${maxDays} days that publicly trusted certificates issued on that date may have. This is unusual for a certificate from a public CA.`,
+        evidence: {
+          validFrom: certificate.validFrom,
+          validTo: certificate.validTo,
+          validityDays: Math.round((expiresAt - issuedAt) / DAY_MS),
+          maximumDays: maxDays,
+        },
+        remediation:
+          'Check which certificate authority issued this certificate. If it is a private CA, this limit does not apply.',
       });
     }
   }

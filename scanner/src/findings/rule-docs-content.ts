@@ -1371,4 +1371,23 @@ Protocols h2 http/1.1`,
       },
     ],
   },
+
+  'TLS-011': {
+    why: 'Publicly trusted certificate authorities follow the CA/Browser Forum Baseline Requirements, which cap how long a certificate may be valid. For certificates issued on or after 2026-03-15 the cap is 200 days, from 2027-03-15 it is 100 days, and from 2029-03-15 it is 47 days. Shorter lifetimes limit how long a stolen key or a wrong certificate stays usable. A certificate valid for longer than the cap on its issue date is unusual for a public CA.',
+    falsePositives:
+      'The cap does not apply to private or internal certificate authorities, which can issue longer certificates. Sentinel skips self-signed certificates and certificates the system trust store did not accept, but a private CA that happens to be trusted on the scanning machine can still be reported. Certificates issued before 2026-03-15 are not checked, because their cap was 398 days. Sentinel reads the dates from the leaf certificate only.',
+    fixes: [
+      {
+        server: 'certbot',
+        snippet: `# Public CAs issue short-lived certificates, so renew automatically.
+certbot renew --dry-run`,
+      },
+    ],
+    references: [
+      {
+        title: 'DigiCert: public TLS certificate validity in 2026, 2027 and 2029',
+        url: 'https://knowledge.digicert.com/alerts/public-tls-certificates-199-day-validity',
+      },
+    ],
+  },
 };
