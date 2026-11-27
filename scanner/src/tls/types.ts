@@ -29,6 +29,22 @@ export interface CertificateInfo {
   signatureAlgorithm: string | null;
 }
 
+/** One certificate of the chain the server sent, leaf first. */
+export interface ChainCertificate {
+  subject: CertName;
+  issuer: CertName;
+  /** ISO 8601 timestamps. */
+  validFrom: string;
+  validTo: string;
+  fingerprint256: string;
+  /** e.g. "rsa", "ec", "ed25519". Null when it could not be read. */
+  keyType: string | null;
+  /** The RSA modulus size in bits. Null for other key types. */
+  keyBits: number | null;
+  /** e.g. "sha256WithRSAEncryption". Null when it could not be read. */
+  signatureAlgorithm: string | null;
+}
+
 export interface TlsAnalysis {
   expired: boolean;
   /** Whole days until expiry. Negative when already expired. */
@@ -55,6 +71,8 @@ export interface TlsResult {
   /** The application protocol the server chose, e.g. "h2". Null when none was chosen. */
   alpnProtocol: string | null;
   certificate: CertificateInfo;
+  /** The certificates the server sent, leaf first. The leaf is also in `certificate`. */
+  chain: ChainCertificate[];
   analysis: TlsAnalysis;
   /** Null when the legacy-protocol probe was not run for this scan. */
   legacyProtocols: LegacyProtocolProbe | null;

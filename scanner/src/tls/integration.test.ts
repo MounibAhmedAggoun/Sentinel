@@ -12,9 +12,11 @@ import { scanTls } from './scan.js';
 let dir: string;
 let tlsServer: tls.Server;
 let caSignedServer: tls.Server;
+let chainServer: tls.Server;
 let silentServer: net.Server;
 let tlsPort: number;
 let caSignedPort: number;
+let chainPort: number;
 let silentPort: number;
 let closedPort: number;
 
@@ -124,6 +126,23 @@ beforeAll(async () => {
   await new Promise<void>((resolve) => caSignedServer.listen(0, '127.0.0.1', resolve));
   caSignedPort = (caSignedServer.address() as AddressInfo).port;
 
+  // The same leaf, but the server also sends the CA certificate, so the chain has two entries.
+  chainServer = tls.createServer(
+    {
+      key: readFileSync(path.join(dir, 'leaf-key.pem')),
+      cert:
+        readFileSync(path.join(dir, 'leaf-cert.pem'), 'utf8') +
+        readFileSync(path.join(dir, 'ca-cert.pem'), 'utf8'),
+    },
+    (socket) => {
+      socket.on('error', () => {});
+      socket.end();
+    },
+  );
+  chainServer.on('tlsClientError', () => {});
+  await new Promise<void>((resolve) => chainServer.listen(0, '127.0.0.1', resolve));
+  chainPort = (chainServer.address() as AddressInfo).port;
+
   // Accepts connections but never answers, to test the timeout.
   silentServer = net.createServer((socket) => socket.on('error', () => {}));
   await new Promise<void>((resolve) => silentServer.listen(0, '127.0.0.1', resolve));
@@ -138,6 +157,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   silentServer.close();
+  chainServer.close();
   caSignedServer.close();
   tlsServer.close();
   rmSync(dir, { recursive: true, force: true });
@@ -186,6 +206,29 @@ describe('connectTls against a local TLS server', () => {
     });
 
     expect(outcome.ok && outcome.result.analysis.selfSigned).toBe(false);
+  });
+
+  it('reads every certificate the server sends, leaf first', async () => {
+    const outcome = await connectTls({ hostname: 'localhost', ip: '127.0.0.1', port: chainPort });
+
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    const { chain, certificate } = outcome.result;
+    expect(chain.map((c) => c.subject.commonName)).toEqual(['localhost', 'Sentinel Test CA']);
+    expect(chain[0]?.fingerprint256).toBe(certificate.fingerprint256);
+    expect(chain[1]?.issuer.commonName).toBe('Sentinel Test CA');
+    expect(chain[1]?.keyType).toBe('rsa');
+    expect(chain[1]?.keyBits).toBe(2048);
+    expect(chain[0]?.signatureAlgorithm).toBeTruthy();
+  });
+
+  it('stops at a self-signed certificate instead of looping', async () => {
+    const outcome = await connectTls({ hostname: 'localhost', ip: '127.0.0.1', port: tlsPort });
+
+    expect(outcome.ok && outcome.result.chain).toHaveLength(1);
+    expect(outcome.ok && outcome.result.chain[0]?.fingerprint256).toBe(
+      outcome.ok && outcome.result.certificate.fingerprint256,
+    );
   });
 
   it('flags a hostname mismatch', async () => {

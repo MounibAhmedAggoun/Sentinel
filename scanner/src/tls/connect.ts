@@ -4,7 +4,7 @@ import tls from 'node:tls';
 import { analyzeCertificate } from './analyze.js';
 import { probeLegacyProtocols } from './legacy-probe.js';
 import { readSignatureAlgorithm } from './signature.js';
-import type { CertName, TlsError, TlsOutcome } from './types.js';
+import type { CertName, ChainCertificate, TlsError, TlsOutcome } from './types.js';
 
 export interface TlsConnectOptions {
   /** The name the certificate should cover. */
@@ -74,6 +74,35 @@ function readKeyInfo(raw: Buffer | undefined): {
   }
 }
 
+const MAX_CHAIN_LENGTH = 10;
+
+/**
+ * Walks the chain Node gives us, leaf first. Node links each certificate to its
+ * issuer, and a self-signed root links to itself, so we stop when a fingerprint
+ * repeats, and also after a fixed number of certificates.
+ */
+function readChain(leaf: tls.DetailedPeerCertificate): ChainCertificate[] {
+  const chain: ChainCertificate[] = [];
+  const seen = new Set<string>();
+  let current: tls.DetailedPeerCertificate | undefined = leaf;
+
+  while (current !== undefined && chain.length < MAX_CHAIN_LENGTH) {
+    if (seen.has(current.fingerprint256)) break;
+    seen.add(current.fingerprint256);
+    chain.push({
+      subject: toCertName(current.subject),
+      issuer: toCertName(current.issuer),
+      validFrom: toIso(current.valid_from),
+      validTo: toIso(current.valid_to),
+      fingerprint256: current.fingerprint256,
+      ...readKeyInfo(current.raw),
+    });
+    current = current.issuerCertificate;
+  }
+
+  return chain;
+}
+
 function toIso(value: string | undefined): string {
   const time = Date.parse(value ?? '');
   return Number.isNaN(time) ? '' : new Date(time).toISOString();
@@ -133,7 +162,7 @@ function connectOnce(options: TlsConnectOptions): Promise<TlsOutcome> {
     );
 
     socket.once('secureConnect', () => {
-      const cert = socket.getPeerCertificate();
+      const cert = socket.getPeerCertificate(true);
       if (!cert || Object.keys(cert).length === 0) {
         fail('NO_CERTIFICATE', 'server presented no certificate');
         return;
@@ -165,6 +194,7 @@ function connectOnce(options: TlsConnectOptions): Promise<TlsOutcome> {
             fingerprint256: cert.fingerprint256,
             ...readKeyInfo(cert.raw),
           },
+          chain: readChain(cert),
           analysis: analyzeCertificate({
             hostname,
             validTo,

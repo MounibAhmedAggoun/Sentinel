@@ -431,3 +431,45 @@ A running log. Add an entry whenever a security-relevant choice is made.
 - **Known gaps:** The egress rules are untested. CI does not run a real scan
   under the flags. A read-only container needs `--tmpfs /tmp` to write a
   report.
+
+## TLS depth: key, signature, validity period and chain (N-01)
+
+- **Decision:** The TLS result now carries the leaf certificate's key type,
+  RSA key size and signature algorithm, the application protocol the server
+  chose (ALPN), and the list of certificates in the chain. Three rules use the
+  leaf data: TLS-008 (RSA key under 2048 bits), TLS-009 (SHA-1 or MD5
+  signature) and TLS-010 (HTTP/2 not offered). TLS-011 reports a validity
+  period longer than the CA/Browser Forum maximum for the certificate's issue
+  date. No rule reads the chain yet.
+- **Schema 1.2 and 1.3:** Version 1.2 added `keyType`, `keyBits`,
+  `signatureAlgorithm` and `alpnProtocol`. Version 1.3 adds `chain`, one entry
+  per certificate with the name, issuer, validity dates, fingerprint, key and
+  signature algorithm. The chain holds no raw certificates and no serial
+  numbers.
+- **Known limit of the version bumps:** The schema version is an exact match,
+  so a report saved with `1.0`, `1.1` or `1.2` no longer passes
+  `sentinel validate` on a build that writes `1.3`. Accepting several versions
+  would be separate work and has not been done.
+- **Signature algorithm on older Node:** Node reports `signatureAlgorithm`
+  only from v24.9.0. On Node 22 the field was null in CI. Sentinel now reads
+  the algorithm identifier from the certificate bytes when Node does not give
+  it, and tests that reader against real OpenSSL certificates.
+- **Validity period (TLS-011):** The limit depends on the issue date: 200
+  days from 2026-03-15, 100 days from 2027-03-15 and 47 days from 2029-03-15.
+  Certificates issued earlier are not checked. Self-signed certificates and
+  certificates the system trust store did not accept are skipped, because
+  private CAs are not bound by this limit. The dates were taken from CA
+  vendor pages, not from the Baseline Requirements text. The rule is
+  informational.
+- **Chain reading:** The chain comes from Node's `getPeerCertificate(true)`,
+  following each certificate to its issuer. It stops when a fingerprint
+  repeats, and after 10 certificates.
+- **Observed on a real scan:** For `example.com` the chain had 4
+  certificates, and the last one was issued by a different name than its own
+  (a cross-signed root). Sentinel does not know whether the server sent all 4
+  or whether Node added the last one from the local trust store. The chain
+  should be read as "what Node linked", not as "what the server sent".
+- **Alternatives considered:** Storing the raw certificates. Not done, to keep
+  the report small and free of bulk data.
+- **Known gaps:** The chain is tested only by a real scan of one site, with no
+  automated test. TLS-008 to TLS-011 read the leaf only.

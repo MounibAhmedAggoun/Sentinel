@@ -89,6 +89,7 @@ export function makeScan(overrides: Partial<ScanResult> = {}): ScanResult {
           keyBits: 2048,
           signatureAlgorithm: 'sha256WithRSAEncryption',
         },
+        chain: [],
         analysis: {
           expired: false,
           daysUntilExpiry: 90,
